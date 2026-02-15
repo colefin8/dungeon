@@ -84,11 +84,11 @@ func handleClient(conn net.Conn) {
 			continue
 		}
 		switch msgType {
-		case shared.MessageTypeConnect:
+		case shared.RequestTypeLogin:
 			client.username = line
 			fmt.Printf("%s has joined!\n", client.username)
-		case shared.MessageTypeSay:
-			broadcast <- fmt.Sprintf("\x1b[35m[%s]\x1b[0;1m %s\x1b[0m\n", client.username, line)
+		case shared.RequestTypeSay:
+			broadcast <- fmt.Sprintf("\x1b[35m[%s]\x1b[39;1m %s\x1b[0m\n", client.username, line)
 		}
 	}
 
@@ -99,7 +99,7 @@ func startBroadcaster() {
 	for msg := range broadcast {
 		clientsMu.Lock()
 		for conn := range clients {
-			_, err := fmt.Fprintf(*conn, "%s\n", msg)
+			_, err := (*conn).Write(append([]byte{shared.ResponseTypeSay}, []byte(msg)...))
 			if err != nil {
 				fmt.Printf("ERROR: could not broadcast to client: %v\n", err)
 			}

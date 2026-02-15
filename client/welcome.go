@@ -36,7 +36,7 @@ func (_ WelcomeView) Update() {
 		nameInputBuffer.Update(e)
 		select {
 		case txt := <-nameInputSubmit:
-			MudConnection.Write(append([]byte{shared.MessageTypeConnect}, []byte(txt+"\n")...))
+			MudConnection.Write(append([]byte{shared.RequestTypeLogin}, []byte(txt+"\n")...))
 			ProgramMode = ProgramModeMud
 			return
 		default:

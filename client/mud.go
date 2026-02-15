@@ -115,15 +115,6 @@ func (_ MudView) Init() {
 }
 
 func (_ MudView) Update() {
-	// go func() {
-	// 	for {
-	// 		txt := <-inputSubmit
-	// 		ansi.MoveCursorTo(5, 5)
-	// 		fmt.Print(txt)
-	// 		inputBuffer.Render()
-	// 	}
-	// }()
-
 	for {
 		e := <-inputStreamSet.Input
 		switch e := e.(type) {
@@ -163,7 +154,9 @@ func (_ MudView) Update() {
 				inputStreamSet.Quit <- true
 				return
 			}
-
+			if strings.HasPrefix(txt, "say ") {
+				MudConnection.Write(append([]byte{shared.RequestTypeSay}, []byte(txt[4:]+"\n")...))
+			}
 		default:
 		}
 	}

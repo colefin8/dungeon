@@ -1,6 +1,11 @@
 package shared
 
 const (
-	MessageTypeConnect byte = iota
-	MessageTypeSay
+	RequestTypeLogin byte = iota
+	RequestTypeSay
+)
+
+const (
+	ResponseTypeLoggedInUsers byte = iota
+	ResponseTypeSay
 )
