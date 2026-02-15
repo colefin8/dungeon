@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -27,13 +28,13 @@ type ProgramModeKind = uint
 type DimensionKind = uint
 
 const (
-	ProgramModeKindWelcome ProgramModeKind = iota
-	ProgramModeKindMud
+	ProgramModeWelcome ProgramModeKind = iota
+	ProgramModeMud
 )
 const (
-	DimensionKindXl DimensionKind = iota
-	DimensionKindTall
-	DimensionKindS
+	DimensionXl DimensionKind = iota
+	DimensionTall
+	DimensionS
 )
 
 var ProgramMode ProgramModeKind
@@ -53,13 +54,14 @@ type IView interface {
 }
 
 var scenes = map[ProgramModeKind]IView{
-	ProgramModeKindWelcome: WelcomeView{},
-	ProgramModeKindMud:     MudView{},
+	ProgramModeWelcome: WelcomeView{},
+	ProgramModeMud:     MudView{},
 }
 
 var bgCol = shared.Color{R: 8, G: 8, B: 8}
 var TermSize shared.XY
 var prevTermState *term.State
+var MudConnection net.Conn
 
 // input channels
 var inputStreamSet = input.StreamSet{
@@ -68,20 +70,20 @@ var inputStreamSet = input.StreamSet{
 }
 
 func main() {
-	// fmt.Printf("dialing socket %s...\n", SOCKET)
-	// conn, err := net.Dial("unix", SOCKET)
-	// if err != nil {
-	// 	if errors.Is(err, syscall.ECONNREFUSED) {
-	// 		fmt.Println("ERROR: server is not running!")
-	// 	} else {
-	// 		fmt.Printf("ERROR: could not dial unix socket %s: %v\n", SOCKET, err)
-	// 	}
-	// 	os.Exit(1)
-	// }
-	// defer conn.Close()
+	fmt.Printf("dialing socket %s...\n", SOCKET)
+	conn, err := net.Dial("unix", SOCKET)
+	if err != nil {
+		if errors.Is(err, syscall.ECONNREFUSED) {
+			fmt.Println("ERROR: server is not running!")
+		} else {
+			fmt.Printf("ERROR: could not dial unix socket %s: %v\n", SOCKET, err)
+		}
+		os.Exit(1)
+	}
+	MudConnection = conn
+	defer MudConnection.Close()
 
-	// ProgramMode = ProgramModeKindMud
-	ProgramMode = ProgramModeKindWelcome
+	ProgramMode = ProgramModeWelcome
 
 	// prep manual input handling
 	prevTermState, _ = term.MakeRaw(int(os.Stdin.Fd()))
@@ -99,19 +101,19 @@ func main() {
 		quit(1)
 	}()
 
-	scenes[ProgramMode].Init()
-	render()
-
-	// resize listener
-	sigResize := make(chan os.Signal, 1)
-	signal.Notify(sigResize, syscall.SIGWINCH)
-	go func() {
-		for range sigResize {
-			render()
-		}
-	}()
-
 	for {
+		scenes[ProgramMode].Init()
+		render()
+
+		// resize listener
+		sigResize := make(chan os.Signal, 1)
+		signal.Notify(sigResize, syscall.SIGWINCH)
+		go func() {
+			for range sigResize {
+				render()
+			}
+		}()
+
 		scenes[ProgramMode].Update()
 	}
 
@@ -160,11 +162,11 @@ func printIncomingMessages(conn net.Conn) {
 func render() {
 	TermSize.X, TermSize.Y, _ = term.GetSize(int(os.Stdin.Fd()))
 	ansi.ClearScreenWithCol(TermSize.X, TermSize.Y, bgCol)
-	Dimension = DimensionKindS
+	Dimension = DimensionS
 	if TermSize.X >= DIMENSION_XL_MIN_WIDTH && TermSize.Y >= DIMENSION_XL_MIN_HEIGHT {
-		Dimension = DimensionKindXl
+		Dimension = DimensionXl
 	} else if TermSize.X >= DIMENSION_TALL_MIN_WIDTH && TermSize.Y >= DIMENSION_TALL_MIN_HEIGHT {
-		Dimension = DimensionKindTall
+		Dimension = DimensionTall
 	}
 
 	ansi.MoveCursorToTopLeft()

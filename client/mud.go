@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"dungeon/client/ansi"
 	"dungeon/client/buffer"
@@ -114,14 +115,14 @@ func (_ MudView) Init() {
 }
 
 func (_ MudView) Update() {
-	go func() {
-		for {
-			txt := <-inputSubmit
-			ansi.MoveCursorTo(5, 5)
-			fmt.Print(txt)
-			inputBuffer.Render()
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		txt := <-inputSubmit
+	// 		ansi.MoveCursorTo(5, 5)
+	// 		fmt.Print(txt)
+	// 		inputBuffer.Render()
+	// 	}
+	// }()
 
 	for {
 		e := <-inputStreamSet.Input
@@ -156,6 +157,15 @@ func (_ MudView) Update() {
 		}
 
 		inputBuffer.Update(e)
+		select {
+		case txt := <-inputSubmit:
+			if strings.ToLower(txt) == "quit" {
+				inputStreamSet.Quit <- true
+				return
+			}
+
+		default:
+		}
 	}
 }
 

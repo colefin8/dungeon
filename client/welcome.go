@@ -31,15 +31,16 @@ func (_ WelcomeView) Init() {
 func (_ WelcomeView) Update() {
 	<-inputReady
 
-	go func() {
-		txt := <-nameInputSubmit
-		ansi.MoveCursorTo(2, 2)
-		fmt.Print(txt)
-	}()
-
 	for {
 		e := <-inputStreamSet.Input
 		nameInputBuffer.Update(e)
+		select {
+		case txt := <-nameInputSubmit:
+			MudConnection.Write(append([]byte{shared.MessageTypeConnect}, []byte(txt+"\n")...))
+			ProgramMode = ProgramModeMud
+			return
+		default:
+		}
 	}
 }
 
@@ -48,12 +49,12 @@ func (_ WelcomeView) Render() {
 	welcomeGraphicPos := shared.XY{X: 0, Y: 0}
 	const WELCOME_TEXT_AREA_WIDTH = 32
 	switch Dimension {
-	case DimensionKindXl:
+	case DimensionXl:
 		welcomeGraphicPos = shared.XY{X: (TermSize.X / 2) - ((WELCOME_TEXT_AREA_WIDTH + ARCHWAY_WIDTH) / 2), Y: (TermSize.Y / 2) - (ARCHWAY_HEIGHT / 2)}
-	case DimensionKindTall:
+	case DimensionTall:
 		welcomeGraphicPos = shared.XY{X: (TermSize.X / 2) - (ARCHWAY_WIDTH / 2), Y: 0}
 	}
-	if Dimension != DimensionKindS {
+	if Dimension != DimensionS {
 		ansi.MoveCursorTo(welcomeGraphicPos.X+1, welcomeGraphicPos.Y+1)
 		f, err := os.Open("torch-demo/archway.bin")
 		if err != nil {
@@ -70,10 +71,10 @@ func (_ WelcomeView) Render() {
 	const WELCOME_TEXT = "Welcome...."
 	welcomeTextPos := shared.XY{X: (TermSize.X / 2) - (len(WELCOME_TEXT) / 2), Y: 2}
 	switch Dimension {
-	case DimensionKindXl:
+	case DimensionXl:
 		welcomeTextPos.X = welcomeGraphicPos.X + ARCHWAY_WIDTH + 4
 		welcomeTextPos.Y = TermSize.Y / 2
-	case DimensionKindTall:
+	case DimensionTall:
 		welcomeTextPos.Y = welcomeGraphicPos.Y + ARCHWAY_HEIGHT + 1
 	}
 	ansi.MoveCursorTo(welcomeTextPos.X, welcomeTextPos.Y)
@@ -93,7 +94,7 @@ func (_ WelcomeView) Render() {
 
 	regularTextPos := shared.XY{X: 2, Y: welcomeTextPos.Y + 2}
 	switch Dimension {
-	case DimensionKindXl:
+	case DimensionXl:
 		regularTextPos.X = welcomeTextPos.X
 	}
 	ansi.MoveCursorTo(regularTextPos.X, regularTextPos.Y)

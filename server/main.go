@@ -86,7 +86,7 @@ func handleClient(conn net.Conn) {
 		switch msgType {
 		case shared.MessageTypeConnect:
 			client.username = line
-			fmt.Fprintf(conn, "Hello %s from server!\n", client.username)
+			fmt.Printf("%s has joined!\n", client.username)
 		case shared.MessageTypeSay:
 			broadcast <- fmt.Sprintf("\x1b[35m[%s]\x1b[0;1m %s\x1b[0m\n", client.username, line)
 		}
