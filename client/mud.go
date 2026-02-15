@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"strings"
 
@@ -107,14 +108,37 @@ var inputSubmit = make(chan string, 512)
 type MudView struct{}
 
 func (_ MudView) Init() {
-	msgBuffer = buffer.NewTextBuffer(DBG_TXT)
+	msgBuffer = buffer.NewTextBuffer(
+		bgCol,
+		DBG_TXT,
+	)
 	inputBuffer = buffer.NewInputBuffer(
 		promptBarCol,
 		inputSubmit,
 	)
 }
 
+func listenForMessages() {
+	scanner := bufio.NewScanner(MudConnection)
+	for {
+		scanStatus := scanner.Scan()
+		if scanStatus {
+			line := scanner.Text()
+			msgBuffer.Append("\n\n" + line)
+			drawMessageBuffer()
+			// fmt.Print(line)
+		} else {
+			fmt.Println("server disconnected!!")
+			inputStreamSet.Quit <- true
+			return
+		}
+	}
+
+}
+
 func (_ MudView) Update() {
+	go listenForMessages()
+
 	for {
 		e := <-inputStreamSet.Input
 		switch e := e.(type) {
@@ -163,7 +187,10 @@ func (_ MudView) Update() {
 }
 
 func (_ MudView) Render() {
-	msgBuffer.OnResize(shared.XY{X: TermSize.X - (MSG_BUFFER_HOR_PADDING * 2), Y: TermSize.Y - 4})
+	msgBuffer.OnResize(
+		shared.XY{X: MSG_BUFFER_HOR_PADDING + 1, Y: 1},
+		shared.XY{X: TermSize.X - (MSG_BUFFER_HOR_PADDING * 2), Y: TermSize.Y - 4},
+	)
 	inputBuffer.OnResize(
 		shared.XY{X: CURSOR_MIN_X_POS, Y: TermSize.Y - 1},
 		shared.XY{X: TermSize.X - (CURSOR_MIN_X_POS + 1), Y: 1},
@@ -187,12 +214,13 @@ func scrollMsgBufferDown() {
 }
 
 func drawMessageBuffer() {
-	msgBufferVisibleLines, msgBufferVisibleTextYPos := msgBuffer.GetVisibleTextAndYPos(TermSize.X-(MSG_BUFFER_HOR_PADDING*2), TermSize.Y-4)
-	ansi.MoveCursorTo(MSG_BUFFER_HOR_PADDING+1, msgBufferVisibleTextYPos)
-	ansi.SetFgCol(ansi.AnsiColorWhite, false)
-	ansi.Set24BitBgCol(bgCol)
-	ansi.HideCursor()
-	fmt.Print(msgBufferVisibleLines)
+	// msgBufferVisibleLines, msgBufferVisibleTextYPos := msgBuffer.GetVisibleTextAndYPos(TermSize.X-(MSG_BUFFER_HOR_PADDING*2), TermSize.Y-4)
+	// ansi.MoveCursorTo(MSG_BUFFER_HOR_PADDING+1, msgBufferVisibleTextYPos)
+	// ansi.SetFgCol(ansi.AnsiColorWhite, false)
+	// ansi.Set24BitBgCol(bgCol)
+	// ansi.HideCursor()
+	// fmt.Print(msgBufferVisibleLines)
+	msgBuffer.Render()
 	inputBuffer.Render()
 }
 

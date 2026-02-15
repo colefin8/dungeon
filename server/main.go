@@ -88,7 +88,7 @@ func handleClient(conn net.Conn) {
 			client.username = line
 			fmt.Printf("%s has joined!\n", client.username)
 		case shared.RequestTypeSay:
-			broadcast <- fmt.Sprintf("\x1b[35m[%s]\x1b[39;1m %s\x1b[0m\n", client.username, line)
+			broadcast <- fmt.Sprintf("\x1b[35m[%s]\x1b[39;1m %s\n", client.username, line)
 		}
 	}
 

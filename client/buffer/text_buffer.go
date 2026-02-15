@@ -1,22 +1,27 @@
 package buffer
 
 import (
+	"dungeon/client/ansi"
 	"dungeon/shared"
 	"fmt"
 	"strings"
 )
 
 type TextBuffer struct {
+	viewPos     shared.XY
 	viewSize    shared.XY
+	bgCol       shared.Color
 	text        string
 	reflowLines []string // memoized for performance
 	scrollY     int
 }
 
 // NOTE: must call OnResize() at least once before the buffer can display any actual text
-func NewTextBuffer(text string) TextBuffer {
+func NewTextBuffer(bgCol shared.Color, text string) TextBuffer {
 	return TextBuffer{
 		shared.XY{},
+		shared.XY{},
+		bgCol,
 		text,
 		[]string{},
 		0,
@@ -38,9 +43,18 @@ func (b *TextBuffer) ScrollDown() bool {
 	return false
 }
 
+func (b *TextBuffer) Append(txt string) {
+	b.text += txt
+	b.setReflowLines()
+}
+
 func (b *TextBuffer) setReflowLines() {
 	lines := strings.Split(b.text, "\n")
 	newLines := []string{}
+	tail := fmt.Sprintf("\x1b[K\r\n\x1b[%dC", b.viewPos.X-1)
+	if b.viewPos.X == 0 {
+		tail = "\r\n"
+	}
 	for _, line := range lines {
 		if len(line) > b.viewSize.X {
 			ind := 0
@@ -49,37 +63,41 @@ func (b *TextBuffer) setReflowLines() {
 				if len(nextPart) == 0 {
 					break
 				}
-				newLines = append(newLines, nextPart+fmt.Sprintf("\x1b[K\x1b[%dD\x1b[B", len(nextPart)))
+				newLines = append(newLines, nextPart+tail)
 				ind += b.viewSize.X
 				if ind >= len(line) {
 					break
 				}
 			}
 		} else {
-			tail := fmt.Sprintf("\x1b[K\x1b[%dD\x1b[B", len(line))
-			if len(line) == 0 {
-				tail = "\x1b[K\x1b[B"
-			}
 			newLines = append(newLines, line+tail)
 		}
 	}
 	b.reflowLines = newLines
 }
-func (b *TextBuffer) OnResize(viewSize shared.XY) {
+func (b *TextBuffer) OnResize(viewPos shared.XY, viewSize shared.XY) {
+	b.viewPos = viewPos
 	b.viewSize = viewSize
 	b.setReflowLines()
 }
-func (b *TextBuffer) GetVisibleTextAndYPos(viewWidth int, viewHeight int) (string, int) {
-	yPos := 1
+func (b *TextBuffer) Render() {
+	lines, drawYPos := b.getVisibleTextAndYPos()
+	ansi.MoveCursorTo(b.viewPos.X, drawYPos)
+	ansi.SetFgCol(ansi.AnsiColorWhite, false)
+	ansi.Set24BitBgCol(b.bgCol)
+	fmt.Print(lines)
+}
+func (b *TextBuffer) getVisibleTextAndYPos() (string, int) {
+	yPos := b.viewPos.Y
 	lines := b.reflowLines[:]
 	bufNumLines := len(lines)
-	if bufNumLines > viewHeight {
-		startLine := bufNumLines - viewHeight
+	if bufNumLines > b.viewSize.Y {
+		startLine := bufNumLines - b.viewSize.Y
 		startLine -= b.scrollY
-		endLine := startLine + viewHeight
+		endLine := startLine + b.viewSize.Y
 		lines = lines[startLine:endLine]
 	} else {
-		yPos += (viewHeight - bufNumLines)
+		yPos += (b.viewSize.Y - bufNumLines)
 	}
 
 	return strings.Join(lines, ""), yPos
