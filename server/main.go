@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"math"
 	"net"
@@ -20,7 +21,7 @@ type Client struct {
 	username string
 }
 
-var broadcast = make(chan string)
+var broadcast = make(chan []byte)
 var clients = make(map[*net.Conn]Client)
 var clientsMu sync.Mutex
 
@@ -70,7 +71,15 @@ func handleClient(conn net.Conn) {
 		if err != nil {
 			if fmt.Sprintf("%v", err) == "EOF" {
 				fmt.Printf("\x1b[34m%s\x1b[0m has left the dungeon...\n", client.username)
+				username := client.username[:]
 				removeClient(&conn)
+
+				// send logout message to other clients
+				data := []byte{shared.ResponseTypeLogout}
+				data = binary.LittleEndian.AppendUint16(data, uint16(len(username)))
+				data = append(data, []byte(client.username)...)
+				broadcast <- data
+
 				break
 			} else {
 				fmt.Printf("could not read from user %v", err)
@@ -87,8 +96,18 @@ func handleClient(conn net.Conn) {
 		case shared.RequestTypeLogin:
 			client.username = line
 			fmt.Printf("%s has joined!\n", client.username)
+			data := []byte{shared.ResponseTypeLogin}
+			data = binary.LittleEndian.AppendUint16(data, uint16(len(client.username)))
+			data = append(data, []byte(client.username)...)
+			broadcast <- data
+			// client.username = line
 		case shared.RequestTypeSay:
-			broadcast <- fmt.Sprintf("\x1b[35m[%s]\x1b[39;1m %s\n", client.username, line)
+			data := []byte{shared.ResponseTypeSay}
+			data = binary.LittleEndian.AppendUint16(data, uint16(len(client.username)))
+			data = append(data, []byte(client.username)...)
+			data = binary.LittleEndian.AppendUint16(data, uint16(len(line)))
+			data = append(data, []byte(line)...)
+			broadcast <- data
 		}
 	}
 
@@ -99,7 +118,7 @@ func startBroadcaster() {
 	for msg := range broadcast {
 		clientsMu.Lock()
 		for conn := range clients {
-			_, err := (*conn).Write(append([]byte{shared.ResponseTypeSay}, []byte(msg)...))
+			_, err := (*conn).Write(append(msg, '\n'))
 			if err != nil {
 				fmt.Printf("ERROR: could not broadcast to client: %v\n", err)
 			}

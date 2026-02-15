@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"strings"
 
@@ -123,10 +124,26 @@ func listenForMessages() {
 	for {
 		scanStatus := scanner.Scan()
 		if scanStatus {
-			line := scanner.Text()
-			msgBuffer.Append("\n\n" + line)
-			drawMessageBuffer()
-			// fmt.Print(line)
+			data := scanner.Bytes()
+			switch data[0] {
+			case shared.ResponseTypeLogin:
+				lenUsername := binary.LittleEndian.Uint16(data[1:3])
+				username := string(data[3 : 3+lenUsername])
+				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has entered the dungeon!", username))
+				drawMessageBuffer()
+			case shared.ResponseTypeLogout:
+				lenUsername := binary.LittleEndian.Uint16(data[1:3])
+				username := string(data[3 : 3+lenUsername])
+				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has left the dungeon....", username))
+				drawMessageBuffer()
+			case shared.ResponseTypeSay:
+				lenUsername := binary.LittleEndian.Uint16(data[1:3])
+				username := string(data[3 : 3+lenUsername])
+				lenMsg := binary.LittleEndian.Uint16(data[3+lenUsername : 5+lenUsername])
+				msg := string(data[5+lenUsername : 5+lenUsername+lenMsg])
+				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[35m[%s]\x1b[39;1m %s", username, msg))
+				drawMessageBuffer()
+			}
 		} else {
 			fmt.Println("server disconnected!!")
 			inputStreamSet.Quit <- true

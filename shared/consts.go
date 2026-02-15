@@ -6,6 +6,8 @@ const (
 )
 
 const (
-	ResponseTypeLoggedInUsers byte = iota
+	ResponseTypeLogin byte = iota
+	ResponseTypeLogout
+	ResponseTypeLoggedInUsers
 	ResponseTypeSay
 )
