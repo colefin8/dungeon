@@ -11,17 +11,23 @@ type TextBuffer struct {
 	viewPos     shared.XY
 	viewSize    shared.XY
 	bgCol       shared.Color
+	fgCol       shared.Color
 	text        string
 	reflowLines []string // memoized for performance
 	scrollY     int
 }
 
 // NOTE: must call OnResize() at least once before the buffer can display any actual text
-func NewTextBuffer(bgCol shared.Color, text string) TextBuffer {
+func NewTextBuffer(
+	bgCol shared.Color,
+	fgCol shared.Color,
+	text string,
+) TextBuffer {
 	return TextBuffer{
 		shared.XY{},
 		shared.XY{},
 		bgCol,
+		fgCol,
 		text,
 		[]string{},
 		0,
@@ -83,7 +89,7 @@ func (b *TextBuffer) OnResize(viewPos shared.XY, viewSize shared.XY) {
 func (b *TextBuffer) Render() {
 	lines, drawYPos := b.getVisibleTextAndYPos()
 	ansi.MoveCursorTo(b.viewPos.X, drawYPos)
-	ansi.SetFgCol(ansi.AnsiColorWhite, false)
+	ansi.Set24BitFgCol(b.fgCol)
 	ansi.Set24BitBgCol(b.bgCol)
 	fmt.Print(lines)
 }

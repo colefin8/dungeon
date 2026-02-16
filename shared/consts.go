@@ -3,6 +3,8 @@ package shared
 const (
 	RequestTypeLogin byte = iota
 	RequestTypeSay
+	RequestTypeWho
+	RequestTypeLook
 )
 
 const (
@@ -10,4 +12,5 @@ const (
 	ResponseTypeLogout
 	ResponseTypeLoggedInUsers
 	ResponseTypeSay
+	ResponseTypeLook
 )

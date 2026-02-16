@@ -24,6 +24,13 @@ const (
 
 const csi = "\x1b["
 
+func SwitchToAlternateScreenBuffer() {
+	fmt.Print(csi + "?1049h")
+}
+func SwitchToMainScreenBuffer() {
+	fmt.Print(csi + "?1049l")
+}
+
 func SetFgCol(col AnsiColor, isBright bool) {
 	brightAdd := 0
 	if isBright {

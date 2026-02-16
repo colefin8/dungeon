@@ -1,9 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"strings"
 
 	"dungeon/client/ansi"
@@ -15,92 +15,9 @@ import (
 var promptBarCol = shared.Color{R: 24, G: 24, B: 24}
 
 const CURSOR_MIN_X_POS = 5
-const DBG_TXT = `
-You've earned this.
-
-Yeah!
-
-I'm a Pollen Jock! And it's a perfect
-fit. All I gotta do are the sleeves.
-
-Oh, yeah.
-
-That's our Barry.
-
-Mom! The bees are back!
-
-If anybody needs
-to make a call, now's the time.
-
-I got a feeling we'll be
-working late tonight!
-
-Here's your change. Have a great
-afternoon! Oan I help who's next?
-
-Would you like some honey with that?
-It is bee-approved. Don't forget these.
-
-Milk, cream, cheese, it's all me.
-And I don't see a nickel!
-
-Sometimes I just feel
-like a piece of meat!
-
-I had no idea.
-
-Barry, I'm sorry.
-Have you got a moment?
-
-Would you excuse me?
-My mosquito associate will help you.
-
-Sorry I'm late.
-
-He's a lawyer too?
-
-I was already a blood-sucking parasite.
-All I needed was a briefcase.
-
-Have a great afternoon!
-
-Barry, I just got this huge tulip order,
-and I can't get them anywhere.
-
-No problem, Vannie.
-Just leave it to me.
-
-You're a lifesaver, Barry.
-Can I help who's next?
-
-All right, scramble, jocks!
-It's time to fly.
-
-Thank you, Barry!
-
-That bee is living my life!
-
-Let it go, Kenny.
-
-- When will this nightmare end?!
-- Let it all go.
-
-- Beautiful day to fly.
-- Sure is.
-
-Between you and me,
-I was dying to get out of that office.
-
-You have got
-to start thinking bee, my friend.
-
-- Thinking bee!
-- Me?
-
-Hold it. Let's just stop for a second. Hold it. I'm sorry. I'm sorry, everyone. Can we stop here? I'm not making a major life decision during a production number! All right. Take ten, everybody. Wrap it up, guys. I had virtually no rehearsal for that.`
-
 const PROMPT_FLOWER = "\u2767"
-const MSG_BUFFER_HOR_PADDING = 2
+const MSG_BUFFER_PADDING_HOR = 2
+const MSG_BUFFER_MAX_WIDTH = 64
 
 var msgBuffer buffer.TextBuffer
 var inputBuffer buffer.InputBuffer
@@ -111,7 +28,8 @@ type MudView struct{}
 func (_ MudView) Init() {
 	msgBuffer = buffer.NewTextBuffer(
 		bgCol,
-		DBG_TXT,
+		txtCol,
+		"",
 	)
 	inputBuffer = buffer.NewInputBuffer(
 		promptBarCol,
@@ -120,11 +38,14 @@ func (_ MudView) Init() {
 }
 
 func listenForMessages() {
-	scanner := bufio.NewScanner(MudConnection)
+	// this will allocate 65,536 bytes of RAM per user. My raspberry pi has 16GB of RAM total, 14GB roughly it says is free. This means about 229,376 users could be online at a time.
+	// even the most popular MUDs in the world in 2026 struggle to hit 100 users online at a time so this is plenty
+	dataBuf := make([]byte, math.MaxUint16+1)
 	for {
-		scanStatus := scanner.Scan()
-		if scanStatus {
-			data := scanner.Bytes()
+		n, err := MudConnection.Read(dataBuf)
+		lenData := binary.LittleEndian.Uint16(dataBuf)
+		if err == nil && int(lenData) == n-2 {
+			data := dataBuf[2:n]
 			switch data[0] {
 			case shared.ResponseTypeLogin:
 				lenUsername := binary.LittleEndian.Uint16(data[1:3])
@@ -136,6 +57,32 @@ func listenForMessages() {
 				username := string(data[3 : 3+lenUsername])
 				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has left the dungeon....", username))
 				drawMessageBuffer()
+			case shared.ResponseTypeLoggedInUsers:
+				ind := 1
+				numUsers := binary.LittleEndian.Uint16(data[ind:])
+				ind += 2
+				usersWord := "users"
+				if numUsers == 1 {
+					usersWord = "user"
+				}
+				var whoStr strings.Builder
+				fmt.Fprintf(&whoStr, "\n\n\x1b[33;1m%d\x1b[39:22m %s currently in the dungeon:", numUsers, usersWord)
+				for range numUsers {
+					lenUsername := int(binary.LittleEndian.Uint16(data[ind:]))
+					ind += 2
+					username := string(data[ind : ind+lenUsername])
+					fmt.Fprintf(&whoStr, "\n  \x1b[97;1m%s\x1b[39;22m", username)
+					ind += lenUsername
+				}
+				msgBuffer.Append(whoStr.String())
+				drawMessageBuffer()
+			case shared.ResponseTypeLook:
+				lenTitle := binary.LittleEndian.Uint16(data[1:])
+				title := string(data[3 : 3+lenTitle])
+				lenDescription := binary.LittleEndian.Uint16(data[3+lenTitle:])
+				description := string(data[5+lenTitle : 5+lenTitle+lenDescription])
+				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\n\x1b[90;22m%s", title, description))
+				drawMessageBuffer()
 			case shared.ResponseTypeSay:
 				lenUsername := binary.LittleEndian.Uint16(data[1:3])
 				username := string(data[3 : 3+lenUsername])
@@ -144,8 +91,8 @@ func listenForMessages() {
 				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[35m[%s]\x1b[39;1m %s", username, msg))
 				drawMessageBuffer()
 			}
-		} else {
-			fmt.Println("server disconnected!!")
+		} else if err != nil {
+			fmt.Printf("server disconnected!! %v\n", err)
 			inputStreamSet.Quit <- true
 			return
 		}
@@ -155,6 +102,8 @@ func listenForMessages() {
 
 func (_ MudView) Update() {
 	go listenForMessages()
+
+	sendLookRequest()
 
 	for {
 		e := <-inputStreamSet.Input
@@ -191,22 +140,33 @@ func (_ MudView) Update() {
 		inputBuffer.Update(e)
 		select {
 		case txt := <-inputSubmit:
-			if strings.ToLower(txt) == "quit" {
+			command := strings.Split(txt, " ")[0]
+			switch command {
+			case "quit":
 				inputStreamSet.Quit <- true
 				return
-			}
-			if strings.HasPrefix(txt, "say ") {
+			case "say":
 				MudConnection.Write(append([]byte{shared.RequestTypeSay}, []byte(txt[4:]+"\n")...))
+			case "who":
+				MudConnection.Write(append([]byte{shared.RequestTypeWho}, '\n'))
+			case "look":
+				sendLookRequest()
 			}
 		default:
 		}
 	}
 }
 
+func sendLookRequest() {
+	MudConnection.Write(append([]byte{shared.RequestTypeLook}, '\n'))
+}
+
 func (_ MudView) Render() {
+	msgBufferWidth := min((TermSize.X - (MSG_BUFFER_PADDING_HOR * 2)), MSG_BUFFER_MAX_WIDTH)
+	msgBufferX := ((TermSize.X / 2) - (msgBufferWidth / 2)) + 1
 	msgBuffer.OnResize(
-		shared.XY{X: MSG_BUFFER_HOR_PADDING + 1, Y: 1},
-		shared.XY{X: TermSize.X - (MSG_BUFFER_HOR_PADDING * 2), Y: TermSize.Y - 4},
+		shared.XY{X: msgBufferX, Y: 1},
+		shared.XY{X: msgBufferWidth, Y: TermSize.Y - 4},
 	)
 	inputBuffer.OnResize(
 		shared.XY{X: CURSOR_MIN_X_POS, Y: TermSize.Y - 1},

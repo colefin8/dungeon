@@ -59,6 +59,7 @@ var scenes = map[ProgramModeKind]IView{
 }
 
 var bgCol = shared.Color{R: 8, G: 8, B: 8}
+var txtCol = shared.Color{R: 96, G: 96, B: 96}
 var TermSize shared.XY
 var prevTermState *term.State
 var MudConnection net.Conn
@@ -84,6 +85,9 @@ func main() {
 	defer MudConnection.Close()
 
 	ProgramMode = ProgramModeWelcome
+
+	ansi.SwitchToAlternateScreenBuffer()
+	defer ansi.SwitchToMainScreenBuffer()
 
 	// prep manual input handling
 	prevTermState, _ = term.MakeRaw(int(os.Stdin.Fd()))

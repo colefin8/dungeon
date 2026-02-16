@@ -56,7 +56,7 @@ func (_ WelcomeView) Render() {
 	}
 	if Dimension != DimensionS {
 		ansi.MoveCursorTo(welcomeGraphicPos.X+1, welcomeGraphicPos.Y+1)
-		f, err := os.Open("torch-demo/archway.bin")
+		f, err := os.Open("archway.bin")
 		if err != nil {
 			fmt.Printf("could not open archway file: %v\n", err)
 			os.Exit(1)
@@ -81,9 +81,7 @@ func (_ WelcomeView) Render() {
 	ansi.Set24BitFgCol(shared.Color{R: 255, G: 255, B: 255})
 	if !hasAllTextAppeared {
 		time.Sleep(1 * time.Second)
-		RollText("Welcome", RollSpeedSlow)
-		time.Sleep(500 * time.Millisecond)
-		RollText("....", RollSpeedSlow)
+		RollText(WELCOME_TEXT, RollSpeedSlow)
 	} else {
 		fmt.Print(WELCOME_TEXT)
 	}
