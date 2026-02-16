@@ -88,8 +88,14 @@ func listenForMessages() {
 				username := string(data[3 : 3+lenUsername])
 				lenMsg := binary.LittleEndian.Uint16(data[3+lenUsername : 5+lenUsername])
 				msg := string(data[5+lenUsername : 5+lenUsername+lenMsg])
-				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[32;1m\"%s\"\x1b[90;22m, says \x1b[37;1m%s\x1b[90;22m.", msg, username))
-				// msgBuffer.Append(fmt.Sprintf("\n\n\x1b[35m[%s]\x1b[39;1m %s", username, msg))
+				saysWord := "says"
+				switch msg[len(msg)-1:] {
+				case "!":
+					saysWord = "shouts"
+				case "?":
+					saysWord = "asks"
+				}
+				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[32;1m\"%s\"\x1b[90;22m, %s \x1b[37;1m%s\x1b[90;22m.", msg, saysWord, username))
 				drawMessageBuffer()
 			}
 		} else if err != nil {
@@ -148,10 +154,22 @@ func (_ MudView) Update() {
 				return
 			case "say":
 				MudConnection.Write(append([]byte{shared.RequestTypeSay}, []byte(txt[4:]+"\n")...))
+				if hintStep == "say" {
+					hintStep = "look"
+					drawHintText()
+				}
 			case "who":
 				MudConnection.Write(append([]byte{shared.RequestTypeWho}, '\n'))
+				if hintStep == "who" {
+					hintStep = "say"
+					drawHintText()
+				}
 			case "look":
 				sendLookRequest()
+				if hintStep == "look" {
+					hintStep = "done"
+					drawHintText()
+				}
 			}
 		default:
 		}
@@ -167,14 +185,15 @@ func (_ MudView) Render() {
 	msgBufferX := ((TermSize.X / 2) - (msgBufferWidth / 2)) + 1
 	msgBuffer.OnResize(
 		shared.XY{X: msgBufferX, Y: 1},
-		shared.XY{X: msgBufferWidth, Y: TermSize.Y - 4},
+		shared.XY{X: msgBufferWidth, Y: TermSize.Y - 5},
 	)
 	inputBuffer.OnResize(
 		shared.XY{X: CURSOR_MIN_X_POS, Y: TermSize.Y - 1},
 		shared.XY{X: TermSize.X - (CURSOR_MIN_X_POS + 1), Y: 1},
 	)
-	drawMessageBuffer()
 	drawPromptInputArea()
+	drawMessageBuffer()
+	drawHintText()
 	inputBuffer.Render()
 }
 
@@ -192,13 +211,41 @@ func scrollMsgBufferDown() {
 }
 
 func drawMessageBuffer() {
-	// msgBufferVisibleLines, msgBufferVisibleTextYPos := msgBuffer.GetVisibleTextAndYPos(TermSize.X-(MSG_BUFFER_HOR_PADDING*2), TermSize.Y-4)
-	// ansi.MoveCursorTo(MSG_BUFFER_HOR_PADDING+1, msgBufferVisibleTextYPos)
-	// ansi.SetFgCol(ansi.AnsiColorWhite, false)
-	// ansi.Set24BitBgCol(bgCol)
-	// ansi.HideCursor()
-	// fmt.Print(msgBufferVisibleLines)
 	msgBuffer.Render()
+	inputBuffer.Render()
+}
+
+var hintStep = "who"
+
+func drawHintText() {
+	ansi.Set24BitBgCol(bgCol)
+	ansi.Set24BitFgCol(shared.Color{R: 73, G: 64, B: 45})
+	ansi.ResetIntensity()
+	ansi.MoveCursorTo(2, TermSize.Y-3)
+
+	if hintStep == "done" {
+		fmt.Print("\x1b[K")
+		return
+	}
+
+	fmt.Print("Hint: enter ")
+	ansi.SetFgCol(ansi.AnsiColorWhite, true)
+	switch hintStep {
+	case "who":
+		fmt.Print("who")
+		ansi.Set24BitFgCol(shared.Color{R: 73, G: 64, B: 45})
+		fmt.Print(" to see which users are currently logged in")
+	case "say":
+		fmt.Print("say Hello my friends")
+		ansi.Set24BitFgCol(shared.Color{R: 73, G: 64, B: 45})
+		fmt.Print(" to say something to everyone else in the same room as you")
+	case "look":
+		fmt.Print("look")
+		ansi.Set24BitFgCol(shared.Color{R: 73, G: 64, B: 45})
+		fmt.Print(" to get a description of the room you're standing in")
+	}
+	fmt.Print("\x1b[K")
+
 	inputBuffer.Render()
 }
 
