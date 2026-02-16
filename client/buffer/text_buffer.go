@@ -1,10 +1,11 @@
 package buffer
 
 import (
-	"dungeon/client/ansi"
-	"dungeon/shared"
 	"fmt"
 	"strings"
+
+	"dungeon/client/ansi"
+	"dungeon/shared"
 )
 
 type TextBuffer struct {
@@ -59,22 +60,43 @@ func (b *TextBuffer) setReflowLines() {
 	newLines := []string{}
 	tail := fmt.Sprintf("\x1b[K\r\n\x1b[%dC", b.viewPos.X-1)
 	if b.viewPos.X == 0 {
-		tail = "\r\n"
+		tail = "\x1b[K\r\n"
 	}
 	for _, line := range lines {
 		if len(line) > b.viewSize.X {
-			ind := 0
-			for {
-				nextPart := line[ind:min(len(line), ind+b.viewSize.X)]
-				if len(nextPart) == 0 {
-					break
-				}
-				newLines = append(newLines, nextPart+tail)
-				ind += b.viewSize.X
-				if ind >= len(line) {
-					break
+			// lots of logic go into a proper soft wrap
+			lenLine := 0
+			inEscSeq := false
+			lastWordBoundaryInd := 0
+			var currentLine strings.Builder
+			for i, r := range line {
+				if !inEscSeq {
+					switch r {
+					case '\x1b':
+						inEscSeq = true
+						continue
+					case ' ':
+						currentLine.WriteString(line[lastWordBoundaryInd:i])
+						lastWordBoundaryInd = i
+					}
+					if r >= 0x20 && r <= 0x7e {
+						lenLine++
+						if lenLine == b.viewSize.X {
+							newLines = append(newLines, currentLine.String()+tail)
+							currentLine.Reset()
+							lastWordBoundaryInd++ // skip over space character where newline goes
+							lenLine = i - lastWordBoundaryInd
+						}
+					}
+				} else {
+					// https://en.wikipedia.org/wiki/ANSI_escape_code#Control_Sequence_Introducer_commands
+					if r >= 0x40 && r <= 0x7e {
+						inEscSeq = false
+					}
 				}
 			}
+			currentLine.WriteString(line[lastWordBoundaryInd:]) // flush what's left
+			newLines = append(newLines, currentLine.String()+tail)
 		} else {
 			newLines = append(newLines, line+tail)
 		}
@@ -89,6 +111,12 @@ func (b *TextBuffer) OnResize(viewPos shared.XY, viewSize shared.XY) {
 func (b *TextBuffer) Render() {
 	lines, drawYPos := b.getVisibleTextAndYPos()
 	ansi.MoveCursorTo(b.viewPos.X, drawYPos)
+	ansi.Set24BitBgCol(shared.Color{R: 255, G: 0, B: 0})
+	fmt.Print("\x1b[A")
+	for range b.viewSize.X {
+		fmt.Print(" ")
+	}
+	fmt.Print("\n")
 	ansi.Set24BitFgCol(b.fgCol)
 	ansi.Set24BitBgCol(b.bgCol)
 	fmt.Print(lines)
