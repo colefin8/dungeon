@@ -62,12 +62,15 @@ func (b *TextBuffer) setReflowLines() {
 	if b.viewPos.X == 0 {
 		tail = "\x1b[K\r\n"
 	}
+linesLoop:
 	for _, line := range lines {
 		if len(line) > b.viewSize.X {
-			// lots of logic go into a proper soft wrap
+			// lots of logic goes into a proper soft wrap
 			lenLine := 0
 			inEscSeq := false
+			inCsiSeq := false
 			lastWordBoundaryInd := 0
+			lenSinceLastWordBoundary := 0
 			var currentLine strings.Builder
 			for i, r := range line {
 				if !inEscSeq {
@@ -78,20 +81,29 @@ func (b *TextBuffer) setReflowLines() {
 					case ' ':
 						currentLine.WriteString(line[lastWordBoundaryInd:i])
 						lastWordBoundaryInd = i
+						lenSinceLastWordBoundary = 0
 					}
 					if r >= 0x20 && r <= 0x7e {
 						lenLine++
+						lenSinceLastWordBoundary++
 						if lenLine == b.viewSize.X {
 							newLines = append(newLines, currentLine.String()+tail)
 							currentLine.Reset()
 							lastWordBoundaryInd++ // skip over space character where newline goes
-							lenLine = i - lastWordBoundaryInd
+							lenLine = lenSinceLastWordBoundary - 1
 						}
 					}
-				} else {
+				} else if inCsiSeq {
 					// https://en.wikipedia.org/wiki/ANSI_escape_code#Control_Sequence_Introducer_commands
 					if r >= 0x40 && r <= 0x7e {
 						inEscSeq = false
+						inCsiSeq = false
+					}
+				} else {
+					if r == '[' {
+						inCsiSeq = true
+					} else {
+						break linesLoop // error state
 					}
 				}
 			}
@@ -111,12 +123,6 @@ func (b *TextBuffer) OnResize(viewPos shared.XY, viewSize shared.XY) {
 func (b *TextBuffer) Render() {
 	lines, drawYPos := b.getVisibleTextAndYPos()
 	ansi.MoveCursorTo(b.viewPos.X, drawYPos)
-	ansi.Set24BitBgCol(shared.Color{R: 255, G: 0, B: 0})
-	fmt.Print("\x1b[A")
-	for range b.viewSize.X {
-		fmt.Print(" ")
-	}
-	fmt.Print("\n")
 	ansi.Set24BitFgCol(b.fgCol)
 	ansi.Set24BitBgCol(b.bgCol)
 	fmt.Print(lines)
