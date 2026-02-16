@@ -88,7 +88,8 @@ func listenForMessages() {
 				username := string(data[3 : 3+lenUsername])
 				lenMsg := binary.LittleEndian.Uint16(data[3+lenUsername : 5+lenUsername])
 				msg := string(data[5+lenUsername : 5+lenUsername+lenMsg])
-				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[35m[%s]\x1b[39;1m %s", username, msg))
+				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[32;1m\"%s\"\x1b[90;22m, says \x1b[37;1m%s\x1b[90;22m.", msg, username))
+				// msgBuffer.Append(fmt.Sprintf("\n\n\x1b[35m[%s]\x1b[39;1m %s", username, msg))
 				drawMessageBuffer()
 			}
 		} else if err != nil {

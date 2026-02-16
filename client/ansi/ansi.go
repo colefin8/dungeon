@@ -94,8 +94,8 @@ func ClearLineWithCol(w int, col shared.Color) {
 }
 
 func EnableMouseInput() {
-	fmt.Print(csi + "?1000h" + csi + "?1003h" + csi + "?1004h" + csi + "?1006h")
+	fmt.Print(csi + "?1000h" + csi + "?1002h" + csi + "?1006h")
 }
 func DisableMouseInput() {
-	fmt.Print(csi + "?1000l" + csi + "?1003l" + csi + "?1004l" + csi + "?1006l")
+	fmt.Print(csi + "?1000l" + csi + "?1002l" + csi + "?1006l")
 }
