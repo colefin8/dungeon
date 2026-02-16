@@ -18,7 +18,7 @@ type TextBuffer struct {
 	scrollY     int
 }
 
-// NOTE: must call OnResize() at least once before the buffer can display any actual text
+// NOTE: must call `OnResize()` at least once before the buffer can display any actual text
 func NewTextBuffer(
 	bgCol shared.Color,
 	fgCol shared.Color,

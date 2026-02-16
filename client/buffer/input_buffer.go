@@ -13,6 +13,7 @@ type InputBuffer struct {
 	viewPos   shared.XY
 	viewSize  shared.XY
 	bgCol     shared.Color
+	fgCol     shared.Color
 	text      string
 	cursorIdx int
 	submit    chan string
@@ -21,12 +22,14 @@ type InputBuffer struct {
 // NOTE: must call OnResize() at least once before the buffer can display any actual text
 func NewInputBuffer(
 	bgCol shared.Color,
+	fgCol shared.Color,
 	submit chan string,
 ) InputBuffer {
 	return InputBuffer{
 		shared.XY{},
 		shared.XY{},
 		bgCol,
+		fgCol,
 		"",
 		0,
 		submit,
@@ -103,7 +106,7 @@ func (ip *InputBuffer) OnResize(viewPos shared.XY, viewSize shared.XY) {
 func (ip *InputBuffer) Render() {
 	ansi.MoveCursorTo(ip.viewPos.X, ip.viewPos.Y)
 	ansi.Set24BitBgCol(ip.bgCol)
-	ansi.SetFgCol(ansi.AnsiColorWhite, true)
+	ansi.Set24BitFgCol(ip.fgCol)
 	fmt.Print("\x1b[K")
 	fmt.Print(ip.text)
 	ansi.MoveCursorHorTo(ip.viewPos.X + ip.cursorIdx)

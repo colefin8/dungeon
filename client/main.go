@@ -20,8 +20,10 @@ const SOCKET = "/home/dungeon/.dungeon.sock"
 const PROMPT = "\x1b[33m\u2767 \x1b[0m"
 const MANICULE = "\u270e"
 
-const ARCHWAY_WIDTH = 64
-const ARCHWAY_HEIGHT = 32
+const ARCHWAY_L_WIDTH = 64
+const ARCHWAY_S_WIDTH = 22
+const ARCHWAY_L_HEIGHT = 32
+const ARCHWAY_S_HEIGHT = 16
 
 // I despise Go enums
 type ProgramModeKind = uint
@@ -34,6 +36,7 @@ const (
 const (
 	DimensionXl DimensionKind = iota
 	DimensionTall
+	DimensionM
 	DimensionS
 )
 
@@ -45,6 +48,8 @@ const (
 	DIMENSION_XL_MIN_HEIGHT   = 32
 	DIMENSION_TALL_MIN_WIDTH  = 64
 	DIMENSION_TALL_MIN_HEIGHT = 42
+	DIMENSION_M_MIN_WIDTH     = 22
+	DIMENSION_M_MIN_HEIGHT    = 24
 )
 
 type IView interface {
@@ -120,33 +125,6 @@ func main() {
 
 		scenes[ProgramMode].Update()
 	}
-
-	// scanner := bufio.NewScanner(os.Stdin)
-
-	// // get username before entering the dungeon
-	// fmt.Println("\nWhat be your name, friend?")
-	// fmt.Print(" \x1b[33m", MANICULE, " \x1b[0m")
-	// scanner.Scan()
-	// username := scanner.Text() + "\n"
-
-	// go printIncomingMessages(conn)
-
-	// bytesToWrite := append([]byte{shared.MessageTypeConnect}, []byte(username)...)
-	// conn.Write(bytesToWrite)
-
-	// for {
-	// 	fmt.Printf("\x1b[%d;2H", termSize.y-1)
-	// 	fmt.Print(PROMPT)
-	// 	if !scanner.Scan() {
-	// 		break
-	// 	}
-
-	// 	line := scanner.Text()
-	// 	if line == "quit" {
-	// 		return
-	// 	}
-	// 	conn.Write(fmt.Appendf([]byte{shared.MessageTypeSay}, "%s\n", line))
-	// }
 }
 
 func printIncomingMessages(conn net.Conn) {
@@ -171,8 +149,11 @@ func render() {
 		Dimension = DimensionXl
 	} else if TermSize.X >= DIMENSION_TALL_MIN_WIDTH && TermSize.Y >= DIMENSION_TALL_MIN_HEIGHT {
 		Dimension = DimensionTall
+	} else if TermSize.X >= DIMENSION_M_MIN_WIDTH && TermSize.Y >= DIMENSION_M_MIN_HEIGHT {
+		Dimension = DimensionM
 	}
 
+	// DEBUG
 	ansi.MoveCursorToTopLeft()
 	ansi.Set24BitFgCol(shared.Color{R: 60, G: 60, B: 60})
 	fmt.Println(TermSize.X, "x", TermSize.Y)

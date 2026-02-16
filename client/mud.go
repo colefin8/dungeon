@@ -13,7 +13,8 @@ import (
 	"dungeon/shared"
 )
 
-var promptBarCol = shared.Color{R: 24, G: 24, B: 24}
+var promptBgCol = shared.Color{R: 24, G: 24, B: 24}
+var promptFgCol = shared.Color{R: 255, G: 255, B: 255}
 
 const CURSOR_MIN_X_POS = 5
 const PROMPT_FLOWER = "\u2767"
@@ -33,7 +34,8 @@ func (_ MudView) Init() {
 		"",
 	)
 	inputBuffer = buffer.NewInputBuffer(
-		promptBarCol,
+		promptBgCol,
+		promptFgCol,
 		inputSubmit,
 	)
 }
@@ -264,11 +266,11 @@ func drawHintText() {
 
 func drawPromptInputArea() {
 	ansi.MoveCursorTo(1, TermSize.Y-2)
-	ansi.ClearLineWithCol(TermSize.X, promptBarCol)
+	ansi.ClearLineWithCol(TermSize.X, promptBgCol)
 	fmt.Println()
-	ansi.ClearLineWithCol(TermSize.X, promptBarCol)
+	ansi.ClearLineWithCol(TermSize.X, promptBgCol)
 	fmt.Println()
-	ansi.ClearLineWithCol(TermSize.X, promptBarCol)
+	ansi.ClearLineWithCol(TermSize.X, promptBgCol)
 	ansi.MoveCursorTo(2, TermSize.Y-1)
 	ansi.SetFgCol(ansi.AnsiColorYellow, false)
 	fmt.Print(PROMPT_FLOWER)
