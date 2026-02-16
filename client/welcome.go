@@ -32,6 +32,7 @@ func (_ WelcomeView) Update() {
 	<-inputReady
 
 	for {
+		ansi.ShowCursor()
 		e := <-inputStreamSet.Input
 		nameInputBuffer.Update(e)
 		select {
@@ -45,6 +46,7 @@ func (_ WelcomeView) Update() {
 }
 
 func (_ WelcomeView) Render() {
+	ansi.HideCursor()
 	// display welcome graphic
 	welcomeGraphicPos := shared.XY{X: 0, Y: 0}
 	const WELCOME_TEXT_AREA_WIDTH = 32

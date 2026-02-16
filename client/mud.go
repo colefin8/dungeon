@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"dungeon/client/ansi"
 	"dungeon/client/buffer"
@@ -37,14 +38,11 @@ func (_ MudView) Init() {
 	)
 }
 
-var incomingMessagesReady = make(chan bool, 1)
-
 func listenForMessages() {
 	// this will allocate 65,536 bytes of RAM per user. My raspberry pi has 16GB of RAM total, 14GB roughly it says is free. This means about 229,376 users could be online at a time.
 	// even the most popular MUDs in the world in 2026 struggle to hit 100 users online at a time so this is plenty
 	dataBuf := make([]byte, math.MaxUint16+1)
 	for {
-		incomingMessagesReady <- true
 		n, err := MudConnection.Read(dataBuf)
 		lenData := binary.LittleEndian.Uint16(dataBuf)
 		if err == nil && int(lenData) == n-2 {
@@ -113,8 +111,7 @@ func listenForMessages() {
 func (_ MudView) Update() {
 	go listenForMessages()
 
-	<-incomingMessagesReady
-
+	time.Sleep(150 * time.Millisecond)
 	sendLookRequest()
 
 	for {
@@ -233,19 +230,30 @@ func drawHintText() {
 		return
 	}
 
+	isSmallSize := TermSize.X <= 80
+
 	fmt.Print("Hint: enter ")
 	ansi.SetFgCol(ansi.AnsiColorWhite, true)
 	switch hintStep {
 	case "who":
 		fmt.Print("who")
+		if isSmallSize {
+			break
+		}
 		ansi.Set24BitFgCol(shared.Color{R: 73, G: 64, B: 45})
 		fmt.Print(" to see which users are currently logged in")
 	case "say":
 		fmt.Print("say Hello my friends")
+		if isSmallSize {
+			break
+		}
 		ansi.Set24BitFgCol(shared.Color{R: 73, G: 64, B: 45})
 		fmt.Print(" to say something to everyone else in the same room as you")
 	case "look":
 		fmt.Print("look")
+		if isSmallSize {
+			break
+		}
 		ansi.Set24BitFgCol(shared.Color{R: 73, G: 64, B: 45})
 		fmt.Print(" to get a description of the room you're standing in")
 	}
