@@ -135,6 +135,9 @@ func handleClient(conn net.Conn) {
 			usernamesBin := []byte{}
 			clientsMu.Lock()
 			for _, client := range clients {
+				if !client.isLoggedIn {
+					continue
+				}
 				numUsers++
 				usernamesBin = binary.LittleEndian.AppendUint16(usernamesBin, uint16(len(client.username)))
 				usernamesBin = append(usernamesBin, []byte(client.username)...)
