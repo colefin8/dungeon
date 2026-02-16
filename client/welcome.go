@@ -13,6 +13,10 @@ import (
 )
 
 const PENCIL = "\u270e"
+const ARCHWAY_L_WIDTH = 64
+const ARCHWAY_S_WIDTH = 55
+const ARCHWAY_L_HEIGHT = 32
+const ARCHWAY_S_HEIGHT = 16
 
 var hasAllTextAppeared = false
 var inputReady = make(chan bool, 1)
@@ -60,7 +64,7 @@ func (_ WelcomeView) Render() {
 	archwayLBuf := make([]byte, fileSize)
 	archwayLFile.Read(archwayLBuf)
 
-	archwaySFile, err := os.Open("archway-s.bin")
+	archwaySFile, err := os.Open("sword.bin")
 	if err != nil {
 		fmt.Printf("could not open small archway file: %v\n", err)
 		inputStreamSet.Quit <- true

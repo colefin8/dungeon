@@ -20,11 +20,6 @@ const SOCKET = "/home/dungeon/.dungeon.sock"
 const PROMPT = "\x1b[33m\u2767 \x1b[0m"
 const MANICULE = "\u270e"
 
-const ARCHWAY_L_WIDTH = 64
-const ARCHWAY_S_WIDTH = 22
-const ARCHWAY_L_HEIGHT = 32
-const ARCHWAY_S_HEIGHT = 16
-
 // I despise Go enums
 type ProgramModeKind = uint
 type DimensionKind = uint
@@ -48,7 +43,7 @@ const (
 	DIMENSION_XL_MIN_HEIGHT   = 32
 	DIMENSION_TALL_MIN_WIDTH  = 64
 	DIMENSION_TALL_MIN_HEIGHT = 42
-	DIMENSION_M_MIN_WIDTH     = 22
+	DIMENSION_M_MIN_WIDTH     = 55
 	DIMENSION_M_MIN_HEIGHT    = 24
 )
 
