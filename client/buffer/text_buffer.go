@@ -69,7 +69,7 @@ linesLoop:
 			lenLine := 0
 			inEscSeq := false
 			inCsiSeq := false
-			lastWordBoundaryInd := 0
+			lastWordBoundaryIdx := 0
 			lenSinceLastWordBoundary := 0
 			var currentLine strings.Builder
 			for i, r := range line {
@@ -79,8 +79,8 @@ linesLoop:
 						inEscSeq = true
 						continue
 					case ' ':
-						currentLine.WriteString(line[lastWordBoundaryInd:i])
-						lastWordBoundaryInd = i
+						currentLine.WriteString(line[lastWordBoundaryIdx:i])
+						lastWordBoundaryIdx = i
 						lenSinceLastWordBoundary = 0
 					}
 					if r >= 0x20 && r <= 0x7e {
@@ -89,7 +89,7 @@ linesLoop:
 						if lenLine == b.viewSize.X {
 							newLines = append(newLines, currentLine.String()+tail)
 							currentLine.Reset()
-							lastWordBoundaryInd++ // skip over space character where newline goes
+							lastWordBoundaryIdx++ // skip over space character where newline goes
 							lenLine = lenSinceLastWordBoundary - 1
 						}
 					}
@@ -107,7 +107,7 @@ linesLoop:
 					}
 				}
 			}
-			currentLine.WriteString(line[lastWordBoundaryInd:]) // flush what's left
+			currentLine.WriteString(line[lastWordBoundaryIdx:]) // flush what's left
 			newLines = append(newLines, currentLine.String()+tail)
 		} else {
 			newLines = append(newLines, line+tail)

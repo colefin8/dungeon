@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/sys/unix"
@@ -36,6 +38,8 @@ func (_ WelcomeView) Init() {
 func (_ WelcomeView) Update() {
 	<-inputReady
 
+	MudConnection.Write(append([]byte{shared.RequestTypeWho}, '\n'))
+
 	for {
 		ansi.ShowCursor()
 		e := <-inputStreamSet.Input
@@ -47,6 +51,57 @@ func (_ WelcomeView) Update() {
 			return
 		default:
 		}
+	}
+}
+
+var loggedInUsersTxt = "\x1b[38;2;44;87;90;1m0\x1b[38;2;33;66;68;22m users currently in the dungeon"
+var textPosX = 1
+
+func (w WelcomeView) ProcessServerMessage(data []byte) {
+	if !hasAllTextAppeared {
+		return
+	}
+
+	switch data[0] {
+	case shared.ResponseTypeLoggedInUsers:
+		dataIdx := 1
+		numUsers := binary.LittleEndian.Uint16(data[dataIdx:])
+		dataIdx += 2
+		usersWord := "users"
+		if numUsers == 1 {
+			usersWord = "user"
+		}
+		newLine := fmt.Sprintf("\n\x1b[%dG\x1b[K", textPosX)
+		var whoStr strings.Builder
+		fmt.Fprintf(&whoStr, "\x1b[K\x1b[38;2;44;87;90;1m%d\x1b[38;2;33;66;68;22m %s currently in the dungeon", numUsers, usersWord)
+		if numUsers > 0 {
+			whoStr.WriteString(":\x1b[38;2;44;87;90;1m")
+			isTermShort := TermSize.Y <= 24
+			if isTermShort {
+				whoStr.WriteString(newLine + "  ")
+			}
+			for i := range numUsers {
+				lenUsername := int(binary.LittleEndian.Uint16(data[dataIdx:]))
+				dataIdx += 2
+				username := string(data[dataIdx : dataIdx+lenUsername])
+				if isTermShort && i > 0 {
+					whoStr.WriteString(", ")
+				} else if !isTermShort {
+					whoStr.WriteString(newLine + "  ")
+				}
+				whoStr.WriteString(username)
+				dataIdx += lenUsername
+			}
+			// clear a few more lines after to remove any users who logged off
+			if !isTermShort {
+				for range 4 {
+					whoStr.WriteString(newLine)
+				}
+			}
+		}
+		whoStr.WriteString(newLine)
+		loggedInUsersTxt = whoStr.String()
+		w.Render()
 	}
 }
 
@@ -85,10 +140,11 @@ func (_ WelcomeView) Render() {
 	case DimensionM:
 		welcomeGraphicPos = shared.XY{X: (TermSize.X / 2) - (ARCHWAY_S_WIDTH / 2), Y: 0}
 	}
-	if Dimension == DimensionXl || Dimension == DimensionTall {
+	switch Dimension {
+	case DimensionXl, DimensionTall:
 		ansi.MoveCursorTo(welcomeGraphicPos.X+1, welcomeGraphicPos.Y+1)
 		unix.Write(int(os.Stdout.Fd()), archwayLBuf)
-	} else if Dimension == DimensionM {
+	case DimensionM:
 		ansi.MoveCursorTo(welcomeGraphicPos.X+1, welcomeGraphicPos.Y+1)
 		unix.Write(int(os.Stdout.Fd()), archwaySBuf)
 	}
@@ -122,11 +178,17 @@ func (_ WelcomeView) Render() {
 	case DimensionXl:
 		regularTextPos.X = welcomeTextPos.X
 	}
+	textPosX = regularTextPos.X
 	ansi.MoveCursorTo(regularTextPos.X, regularTextPos.Y)
 	ansi.Set24BitFgCol(shared.Color{R: 116, G: 98, B: 80})
 	fmt.Print("What be thy name?")
 
+	// draw logged in users text
+	ansi.MoveCursorTo(regularTextPos.X, regularTextPos.Y+3)
+	fmt.Print(loggedInUsersTxt)
+
 	ansi.MoveCursorTo(regularTextPos.X, regularTextPos.Y+1)
+	ansi.Set24BitFgCol(shared.Color{R: 116, G: 98, B: 80})
 	fmt.Printf("%s ", PENCIL)
 	ansi.Set24BitFgCol(shared.Color{R: 253, G: 213, B: 174})
 	ansi.SetBold()

@@ -99,3 +99,7 @@ func EnableMouseInput() {
 func DisableMouseInput() {
 	fmt.Print(csi + "?1000l" + csi + "?1002l" + csi + "?1006l")
 }
+
+func RequestCursorPos() {
+	fmt.Print(csi + "6n")
+}

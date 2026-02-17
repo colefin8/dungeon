@@ -10,8 +10,9 @@ import (
 )
 
 type StreamSet struct {
-	Input chan IEvent
-	Quit  chan bool
+	Input     chan IEvent
+	CursorPos chan IEvent
+	Quit      chan bool
 }
 
 type EventKind uint
@@ -80,6 +81,11 @@ type NonalphaKeyEvent struct {
 	Key NonalphaKey
 }
 
+type CursorPosEvent struct {
+	ImplEvent
+	Pos shared.XY
+}
+
 func StartPollingInput(streamSet StreamSet) {
 	for {
 		buf := make([]byte, 64)
@@ -124,6 +130,8 @@ func StartPollingInput(streamSet StreamSet) {
 				streamSet.Input <- e
 			case NonalphaKeyEvent:
 				streamSet.Input <- e
+			case CursorPosEvent:
+				streamSet.CursorPos <- e
 			}
 		}
 	}
@@ -230,6 +238,8 @@ func getEventFromCsi(mode byte, paramsRaw []byte) IEvent {
 		return newNonalphaKeyEvent(NonalphaKeyRight)
 	case 'D':
 		return newNonalphaKeyEvent(NonalphaKeyLeft)
+	case 'R':
+		return newCursorPosEvent(params)
 	}
 	return getNilEvent()
 }
@@ -246,6 +256,13 @@ func getEventFromMouseInput(mode byte, params []int) IEvent {
 		return newMouseEvent(button, shared.XY{X: x, Y: y})
 	}
 	return getNilEvent()
+}
+
+func newCursorPosEvent(params []int) CursorPosEvent {
+	return CursorPosEvent{
+		ImplEvent{},
+		shared.XY{X: params[1], Y: params[0]},
+	}
 }
 
 func newKeyEvent(key rune, mod KeyMod) KeyEvent {

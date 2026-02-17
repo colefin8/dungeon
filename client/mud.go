@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -40,79 +39,63 @@ func (_ MudView) Init() {
 	)
 }
 
-func listenForMessages() {
-	// this will allocate 65,536 bytes of RAM per user. My raspberry pi has 16GB of RAM total, 14GB roughly it says is free. This means about 229,376 users could be online at a time.
-	// even the most popular MUDs in the world in 2026 struggle to hit 100 users online at a time so this is plenty
-	dataBuf := make([]byte, math.MaxUint16+1)
-	for {
-		n, err := MudConnection.Read(dataBuf)
-		lenData := binary.LittleEndian.Uint16(dataBuf)
-		if err == nil && int(lenData) == n-2 {
-			data := dataBuf[2:n]
-			switch data[0] {
-			case shared.ResponseTypeLogin:
-				lenUsername := binary.LittleEndian.Uint16(data[1:3])
-				username := string(data[3 : 3+lenUsername])
-				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has entered the dungeon!", username))
-				drawMessageBuffer()
-			case shared.ResponseTypeLogout:
-				lenUsername := binary.LittleEndian.Uint16(data[1:3])
-				username := string(data[3 : 3+lenUsername])
-				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has left the dungeon....", username))
-				drawMessageBuffer()
-			case shared.ResponseTypeLoggedInUsers:
-				ind := 1
-				numUsers := binary.LittleEndian.Uint16(data[ind:])
-				ind += 2
-				usersWord := "users"
-				if numUsers == 1 {
-					usersWord = "user"
-				}
-				var whoStr strings.Builder
-				fmt.Fprintf(&whoStr, "\n\n\x1b[33;1m%d\x1b[39:22m %s currently in the dungeon:", numUsers, usersWord)
-				for range numUsers {
-					lenUsername := int(binary.LittleEndian.Uint16(data[ind:]))
-					ind += 2
-					username := string(data[ind : ind+lenUsername])
-					fmt.Fprintf(&whoStr, "\n  \x1b[97;1m%s\x1b[39;22m", username)
-					ind += lenUsername
-				}
-				msgBuffer.Append(whoStr.String())
-				drawMessageBuffer()
-			case shared.ResponseTypeLook:
-				lenTitle := binary.LittleEndian.Uint16(data[1:])
-				title := string(data[3 : 3+lenTitle])
-				lenDescription := binary.LittleEndian.Uint16(data[3+lenTitle:])
-				description := string(data[5+lenTitle : 5+lenTitle+lenDescription])
-				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\n\x1b[90;22m%s", title, description))
-				drawMessageBuffer()
-			case shared.ResponseTypeSay:
-				lenUsername := binary.LittleEndian.Uint16(data[1:3])
-				username := string(data[3 : 3+lenUsername])
-				lenMsg := binary.LittleEndian.Uint16(data[3+lenUsername : 5+lenUsername])
-				msg := string(data[5+lenUsername : 5+lenUsername+lenMsg])
-				saysWord := "says"
-				switch msg[len(msg)-1:] {
-				case "!":
-					saysWord = "shouts"
-				case "?":
-					saysWord = "asks"
-				}
-				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[32;1m\"%s\"\x1b[90;22m, %s \x1b[37;1m%s\x1b[90;22m.", msg, saysWord, username))
-				drawMessageBuffer()
-			}
-		} else if err != nil {
-			fmt.Printf("server disconnected!! %v\n", err)
-			inputStreamSet.Quit <- true
-			return
+func (_ MudView) ProcessServerMessage(data []byte) {
+	switch data[0] {
+	case shared.ResponseTypeLogin:
+		lenUsername := binary.LittleEndian.Uint16(data[1:3])
+		username := string(data[3 : 3+lenUsername])
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has entered the dungeon!", username))
+		drawMessageBuffer()
+	case shared.ResponseTypeLogout:
+		lenUsername := binary.LittleEndian.Uint16(data[1:3])
+		username := string(data[3 : 3+lenUsername])
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has left the dungeon....", username))
+		drawMessageBuffer()
+	case shared.ResponseTypeLoggedInUsers:
+		dataIdx := 1
+		numUsers := binary.LittleEndian.Uint16(data[dataIdx:])
+		dataIdx += 2
+		usersWord := "users"
+		if numUsers == 1 {
+			usersWord = "user"
 		}
+		var whoStr strings.Builder
+		fmt.Fprintf(&whoStr, "\n\n\x1b[33;1m%d\x1b[39:22m %s currently in the dungeon:", numUsers, usersWord)
+		for range numUsers {
+			lenUsername := int(binary.LittleEndian.Uint16(data[dataIdx:]))
+			dataIdx += 2
+			username := string(data[dataIdx : dataIdx+lenUsername])
+			fmt.Fprintf(&whoStr, "\n  \x1b[97;1m%s\x1b[39;22m", username)
+			dataIdx += lenUsername
+		}
+		msgBuffer.Append(whoStr.String())
+		drawMessageBuffer()
+	case shared.ResponseTypeLook:
+		lenTitle := binary.LittleEndian.Uint16(data[1:])
+		title := string(data[3 : 3+lenTitle])
+		lenDescription := binary.LittleEndian.Uint16(data[3+lenTitle:])
+		description := string(data[5+lenTitle : 5+lenTitle+lenDescription])
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\n\x1b[90;22m%s", title, description))
+		drawMessageBuffer()
+	case shared.ResponseTypeSay:
+		lenUsername := binary.LittleEndian.Uint16(data[1:3])
+		username := string(data[3 : 3+lenUsername])
+		lenMsg := binary.LittleEndian.Uint16(data[3+lenUsername : 5+lenUsername])
+		msg := string(data[5+lenUsername : 5+lenUsername+lenMsg])
+		saysWord := "says"
+		switch msg[len(msg)-1:] {
+		case "!":
+			saysWord = "shouts"
+		case "?":
+			saysWord = "asks"
+		}
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[32;1m\"%s\"\x1b[90;22m, %s \x1b[37;1m%s\x1b[90;22m.", msg, saysWord, username))
+		drawMessageBuffer()
 	}
-
 }
 
 func (_ MudView) Update() {
-	go listenForMessages()
-
+	// ensure every user sees it every time; no race condition
 	time.Sleep(150 * time.Millisecond)
 	sendLookRequest()
 
