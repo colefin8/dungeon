@@ -49,11 +49,11 @@ func main() {
 
 	go startUpdatingLoggedInUsers()
 
-	// logFile, err = os.OpenFile(LOG_FILE, os.O_WRONLY|os.O_CREATE|os.O_APPEND, os.ModeAppend)
-	// if err != nil {
-	// 	log("could not open log file: %v", err)
-	// }
-	// defer logFile.Close()
+	logFile, err = os.OpenFile(LOG_FILE, os.O_WRONLY|os.O_CREATE|os.O_APPEND, os.ModeAppend)
+	if err != nil {
+		log("could not open log file: %v", err)
+	}
+	defer logFile.Close()
 
 	cells[WorldPos{X: 0, Y: 0, Z: 0}.Hash()] = cell.Cell{
 		Title:       "The Chapel",
