@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 
 	"dungeon/server/world"
@@ -83,7 +84,7 @@ func HandleClient(conn *net.Conn) {
 		case shared.RequestTypeWho:
 			writeDataToClient(conn, loggedInUsersBin)
 		case shared.RequestTypeMovement:
-			var movementType shared.Direction = data[1]
+			movementType := shared.Direction(data[1])
 			// free space where they want to go?
 			targetWorldPos := client.currentPos
 			switch movementType {
@@ -96,11 +97,18 @@ func HandleClient(conn *net.Conn) {
 			case shared.DirectionWest:
 				targetWorldPos.X -= 1
 			}
-			if _, exists := world.Cells[targetWorldPos.Hash()]; exists && !client.hasTornMeniscus {
-				client.currentPos = targetWorldPos
-			} else {
-				// send bonk message
+			if client.hasTornMeniscus {
+				writeDataToClient(conn, []byte{shared.ResponseTypeCantMove, shared.CantMoveReasonTM})
 				continue
+			} else {
+				currentCell := world.Cells[client.currentPos.Hash()]
+				if slices.Contains(currentCell.Exits, movementType) {
+					client.currentPos = targetWorldPos
+				} else {
+					// send bonk message
+					writeDataToClient(conn, []byte{shared.ResponseTypeCantMove, shared.CantMoveReasonNoExit})
+					continue
+				}
 			}
 			fallthrough
 		case shared.RequestTypeLook:
