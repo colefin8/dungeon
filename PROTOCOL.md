@@ -37,6 +37,14 @@ Sent from a client to the server when requesting a description of their characte
 | 1 | `byte` | `RequestTypeLook` |
 | 1 | `byte` | `\n` |
 
+### Movement
+Sent from a client to the server to request their character move to a neighboring cell. Server resonds with a `ResponseTypeLook`.
+| Length | Type | Content |
+| - | - | - |
+| 1 | `byte` | `RequestTypeMovement` |
+| 1 | `byte` | `MovementType` - north, east, south or west (for the time being) |
+| 1 | `byte` | `\n` |
+
 ## Server → client
 
 All data sent from server to client is prefixed with the length of the data as a little-endian 16-bit number, which is then followed by the data.

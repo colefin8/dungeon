@@ -14,3 +14,10 @@ const (
 	ResponseTypeSay
 	ResponseTypeLook
 )
+
+const (
+	MovementTypeNorth byte = iota
+	MovementTypeEast
+	MovementTypeSouth
+	MovementTypeWest
+)
