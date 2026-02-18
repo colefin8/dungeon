@@ -3,6 +3,8 @@ Following is the specification for the binary format in which the server and cli
 
 All multi-byte numbers are little-endian.
 
+All communication type IDs (`RequestTypeLogin`, etc.) can be found at [`shared/consts.go`](shared/consts.go)
+
 ## Client → server
 
 ### Login
