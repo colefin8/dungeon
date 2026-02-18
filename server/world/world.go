@@ -1,6 +1,10 @@
 package world
 
-import "math"
+import (
+	"math"
+
+	"dungeon/shared"
+)
 
 type Pos struct {
 	X uint16
@@ -10,6 +14,7 @@ type Pos struct {
 type Cell struct {
 	Title       string
 	Description string
+	Exits       []shared.Direction
 }
 
 func (p Pos) Hash() uint64 {
@@ -24,8 +29,14 @@ var CenterPos = Pos{
 }
 
 func CreateWorld() {
-	Cells[CenterPos.Hash()] = Cell{
+	cursor := CenterPos
+	Cells[cursor.Hash()] = Cell{
 		Title:       "The Chapel",
 		Description: "You wonder as to why there is a chapel deep beneath the earth, where the stone corridors of the dungeon wind like the roots of a great oak tree, yet here exists one, hewn from the living rock. It is not so vast as the cathedrals of great cities, yet neither is it small; its vaulted ceiling rises high enough that a tall banner might hang untroubled, and its nave would seat a modest gathering without crowding. The air within is cool and still, carrying the faint scent of old incense long settled into the stone. Its wooden pews that line the two sides of the room have seen better days, but have also seen days of use recently.",
+	}
+	cursor.X++
+	Cells[cursor.Hash()] = Cell{
+		Title:       "Dark Hallway Next to the Chapel",
+		Description: "ewwww grossssss :(",
 	}
 }

@@ -134,7 +134,7 @@ func (_ MudView) Update() {
 		inputBuffer.Update(e)
 		select {
 		case txt := <-inputSubmit:
-			command := strings.Split(txt, " ")[0]
+			command := strings.ToLower(strings.Split(txt, " ")[0])
 			switch command {
 			case "quit":
 				inputStreamSet.Quit <- true
@@ -146,7 +146,7 @@ func (_ MudView) Update() {
 					drawHintText()
 				}
 			case "who":
-				MudConnection.Write(append([]byte{shared.RequestTypeWho}, '\n'))
+				MudConnection.Write([]byte{shared.RequestTypeWho, '\n'})
 				if hintStep == "who" {
 					hintStep = "say"
 					drawHintText()
@@ -157,6 +157,17 @@ func (_ MudView) Update() {
 					hintStep = "done"
 					drawHintText()
 				}
+			case "n", "north":
+				MudConnection.Write([]byte{shared.RequestTypeMovement, shared.DirectionNorth, '\n'})
+			case "e", "east":
+				MudConnection.Write([]byte{shared.RequestTypeMovement, shared.DirectionEast, '\n'})
+			case "s", "south":
+				MudConnection.Write([]byte{shared.RequestTypeMovement, shared.DirectionSouth, '\n'})
+			case "w", "west":
+				MudConnection.Write([]byte{shared.RequestTypeMovement, shared.DirectionWest, '\n'})
+			default:
+				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\x1b[31;22m is not a recognized command!\x1b[90;22m", command))
+				drawMessageBuffer()
 			}
 		default:
 		}

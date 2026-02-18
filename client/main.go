@@ -17,7 +17,6 @@ import (
 	"golang.org/x/term"
 )
 
-const SOCKET = "/home/dungeon/.dungeon.sock"
 const PROMPT = "\x1b[33m\u2767 \x1b[0m"
 const MANICULE = "\u270e"
 
@@ -74,13 +73,13 @@ var inputStreamSet = input.StreamSet{
 }
 
 func main() {
-	fmt.Printf("dialing socket %s...\n", SOCKET)
-	conn, err := net.Dial("unix", SOCKET)
+	fmt.Printf("dialing socket %s...\n", shared.SOCKET_PATH)
+	conn, err := net.Dial("unix", shared.SOCKET_PATH)
 	if err != nil {
 		if errors.Is(err, syscall.ECONNREFUSED) {
 			fmt.Println("ERROR: server is not running!")
 		} else {
-			fmt.Printf("ERROR: could not dial unix socket %s: %v\n", SOCKET, err)
+			fmt.Printf("ERROR: could not dial unix socket %s: %v\n", shared.SOCKET_PATH, err)
 		}
 		os.Exit(1)
 	}
