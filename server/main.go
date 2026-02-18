@@ -128,14 +128,6 @@ func startBroadcaster() {
 	}
 }
 
-// Writes data to a client connection, encoded as the length of the data as a little-endian 16-bit number, followed by the data itself.
-func writeDataToClient(conn *net.Conn, data []byte) (int, error) {
-	lenData := make([]byte, 2)
-	binary.LittleEndian.PutUint16(lenData, uint16(len(data)))
-	data = append(lenData, data...)
-	return (*conn).Write(data)
-}
-
 func removeClient(conn *net.Conn) {
 	clientsMu.Lock()
 	delete(clients, conn)
