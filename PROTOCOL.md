@@ -10,7 +10,29 @@ Sent from a client to the server when logging in
 | Length | Type | Content |
 | - | - | - |
 | 1 | `byte` | `RequestTypeLogin` |
-| variable | `string` | `username` |
+| variable | `string` | username |
+| 1 | `byte` | `\n` |
+
+### Say
+Sent from a client to the server when using the `say` command along with a message
+| Length | Type | Content |
+| - | - | - |
+| 1 | `byte` | `RequestTypeSay` |
+| variable | `string` | message |
+| 1 | `byte` | `\n` |
+
+### Who
+Sent from a client to the server when requesting a list of all currently logged-in users
+| Length | Type | Content |
+| - | - | - |
+| 1 | `byte` | `RequestTypeWho` |
+| 1 | `byte` | `\n` |
+
+### Look
+Sent from a client to the server when requesting a description of their character's surroundings
+| Length | Type | Content |
+| - | - | - |
+| 1 | `byte` | `RequestTypeLook` |
 | 1 | `byte` | `\n` |
 
 ## Server → client
