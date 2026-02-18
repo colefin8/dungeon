@@ -1,7 +1,9 @@
-# Client/server protocol
+zz# Client/server protocol
 Following is the specification for the binary format in which the server and client applications communicate with one another over the Unix socket.
 
 All multi-byte numbers are little-endian.
+
+## Client → server
 
 ## Server → client
 
