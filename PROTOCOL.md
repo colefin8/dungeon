@@ -54,7 +54,7 @@ Sent from the server to all logged-in clients when a user logs out
 | `len(username)` | `string` | `username` |
 
 ### Logged-in users
-Sent from the server to any client who asks, and to every user on the Welcome screen any time `numLoggedInUsers` is updated
+Sent from the server to any client who asks, and to every user on the Welcome screen any time `numLoggedInUsers` changes
 | Length | Type | Content |
 | - | - | - |
 | 1 | `byte` | `ResponseTypeLoggedInUsers` |
