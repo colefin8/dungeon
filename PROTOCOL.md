@@ -1,9 +1,17 @@
-zz# Client/server protocol
+# Client/server protocol
 Following is the specification for the binary format in which the server and client applications communicate with one another over the Unix socket.
 
 All multi-byte numbers are little-endian.
 
 ## Client → server
+
+### Login
+Sent from a client to the server when logging in
+| Length | Type | Content |
+| - | - | - |
+| 1 | `byte` | `RequestTypeLogin` |
+| variable | `string` | `username` |
+| 1 | `byte` | `\n` |
 
 ## Server → client
 
