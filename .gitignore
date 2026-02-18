@@ -1,5 +1,7 @@
+torch-demo
 bin
 go.sum
+*.bin
 *.png
 *.jpg
 *.jpeg
