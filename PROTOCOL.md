@@ -39,6 +39,8 @@ Sent from a client to the server when requesting a description of their characte
 
 ## Server → client
 
+All data sent from server to client is prefixed with the length of the data as a little-endian 16-bit number, which is then followed by the data.
+
 ### Login
 Sent from the server to all logged-in clients when a user logs in
 | Length | Type | Content |
