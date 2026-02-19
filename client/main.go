@@ -59,6 +59,7 @@ var scenes = map[ProgramModeKind]IView{
 	ProgramModeMud:     MudView{},
 }
 
+var tty *os.File
 var bgCol = shared.Color{R: 8, G: 8, B: 8}
 var txtCol = shared.Color{R: 96, G: 96, B: 96}
 var TermSize shared.XY
@@ -88,18 +89,28 @@ func main() {
 
 	ProgramMode = ProgramModeWelcome
 
-	ansi.SwitchToAlternateScreenBuffer()
-	defer ansi.SwitchToMainScreenBuffer()
+	tty, err = os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	if err != nil {
+		fmt.Println("ERROR: could not open /dev/tty for reading and writing")
+		os.Exit(1)
+	}
+	defer tty.Close()
+
+	ansi.SwitchToAlternateScreenBuffer(tty)
+	defer ansi.SwitchToMainScreenBuffer(tty)
 
 	// prep manual input handling
-	prevTermState, _ = term.MakeRaw(int(os.Stdin.Fd()))
-	defer term.Restore(int(os.Stdin.Fd()), prevTermState)
-	ansi.EnableMouseInput()
-	defer ansi.DisableMouseInput()
+	if prevTermState, err = term.MakeRaw(int(tty.Fd())); err != nil {
+		fmt.Println("ERROR: could not make /dev/tty raw")
+		os.Exit(1)
+	}
+	defer term.Restore(int(tty.Fd()), prevTermState)
+	ansi.EnableMouseInput(tty)
+	defer ansi.DisableMouseInput(tty)
 	ansi.HideCursor()
 	defer ansi.ShowCursor()
 
-	go input.StartPollingInput(inputStreamSet)
+	go input.StartPollingInput(tty, inputStreamSet)
 	go receiveMessagesFromServer()
 
 	// check for quit
@@ -161,7 +172,7 @@ func render() {
 
 func quit(code int) {
 	ansi.ShowCursor()
-	ansi.DisableMouseInput()
-	term.Restore(int(os.Stdin.Fd()), prevTermState)
+	ansi.DisableMouseInput(tty)
+	term.Restore(int(tty.Fd()), prevTermState)
 	os.Exit(code)
 }
