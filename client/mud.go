@@ -44,12 +44,12 @@ func (_ MudView) ProcessServerMessage(data []byte) {
 	case shared.ResponseTypeLogin:
 		lenUsername := binary.LittleEndian.Uint16(data[1:3])
 		username := string(data[3 : 3+lenUsername])
-		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has entered the dungeon!", username))
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[90;22m has entered the dungeon!", username))
 		drawMessageBuffer()
 	case shared.ResponseTypeLogout:
 		lenUsername := binary.LittleEndian.Uint16(data[1:3])
 		username := string(data[3 : 3+lenUsername])
-		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has left the dungeon....", username))
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[90;22m has left the dungeon....", username))
 		drawMessageBuffer()
 	case shared.ResponseTypeLoggedInUsers:
 		dataIdx := 1
@@ -96,7 +96,7 @@ func (_ MudView) ProcessServerMessage(data []byte) {
 			exits = append(exits, "west")
 		}
 		exitsTxt := strings.Join(exits, ", ")
-		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\n\x1b[90;22m%s\n\nVisible exits are \x1b[33m%s", title, description, exitsTxt))
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\n\x1b[90;22m%s\n\nVisible exits are \x1b[37m%s\x1b[90;22m.", title, description, exitsTxt))
 		drawMessageBuffer()
 	case shared.ResponseTypeSay:
 		lenUsername := binary.LittleEndian.Uint16(data[1:3])
