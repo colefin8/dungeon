@@ -38,11 +38,11 @@ Sent from a client to the server when requesting a description of their characte
 | 1 | `byte` | `\n` |
 
 ### Movement
-Sent from a client to the server to request their character move to a neighboring cell. Server resonds with a `ResponseTypeLook`.
+Sent from a client to the server to request their character move to a neighboring cell via an exit. Server resonds with a `ResponseTypeLook` if successful, or `ResponseTypeCantMove` otherwise.
 | Length | Type | Content |
 | - | - | - |
 | 1 | `byte` | `RequestTypeMovement` |
-| 1 | `byte` | `MovementType` - north, east, south or west (for the time being) |
+| 1 | `Direction` | ID indicating north, east, south or west (for the time being) |
 | 1 | `byte` | `\n` |
 
 ## Server → client
@@ -102,4 +102,4 @@ Sent from the server to a client who tried to move to a cell but can't; usually 
 | Length | Type | Content |
 | - | - | - |
 | 1 | `byte` | `ResponseTypeCantMove` |
-| 1 | `byte` | any `CantMoveReason` |
+| 1 | `CantMoveReason` | ID indicating the reason the player can't move |

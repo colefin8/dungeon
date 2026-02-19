@@ -33,7 +33,9 @@ const (
 	DirectionWest
 )
 
+type CantMoveReason byte
+
 const (
-	CantMoveReasonNoExit byte = iota
+	CantMoveReasonNoExit CantMoveReason = iota
 	CantMoveReasonTM
 )

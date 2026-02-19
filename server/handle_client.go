@@ -98,15 +98,21 @@ func HandleClient(conn *net.Conn) {
 				targetWorldPos.X -= 1
 			}
 			if client.hasTornMeniscus {
-				writeDataToClient(conn, []byte{shared.ResponseTypeCantMove, shared.CantMoveReasonTM})
+				writeDataToClient(conn, []byte{shared.ResponseTypeCantMove, byte(shared.CantMoveReasonTM)})
 				continue
 			} else {
 				currentCell := world.Cells[client.currentPos.Hash()]
 				if slices.Contains(currentCell.Exits, movementType) {
-					client.currentPos = targetWorldPos
+					if _, exists := world.Cells[targetWorldPos.Hash()]; exists {
+						client.currentPos = targetWorldPos
+					} else {
+						log("ERROR: user tried to move from cell %v to nonexistent cell %v using an exit", client.currentPos, targetWorldPos)
+						writeDataToClient(conn, []byte{shared.ResponseTypeCantMove, byte(shared.CantMoveReasonNoExit)})
+						continue
+					}
 				} else {
 					// send bonk message
-					writeDataToClient(conn, []byte{shared.ResponseTypeCantMove, shared.CantMoveReasonNoExit})
+					writeDataToClient(conn, []byte{shared.ResponseTypeCantMove, byte(shared.CantMoveReasonNoExit)})
 					continue
 				}
 			}

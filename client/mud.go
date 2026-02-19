@@ -91,6 +91,15 @@ func (_ MudView) ProcessServerMessage(data []byte) {
 		}
 		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[32;1m\"%s\"\x1b[90;22m, %s \x1b[37;1m%s\x1b[90;22m.", msg, saysWord, username))
 		drawMessageBuffer()
+	case shared.ResponseTypeCantMove:
+		reason := shared.CantMoveReason(data[1])
+		switch reason {
+		case shared.CantMoveReasonNoExit:
+			msgBuffer.Append("\n\n\x1b[31;22mAlas, ye cannot go that way!")
+		case shared.CantMoveReasonTM:
+			msgBuffer.Append("\n\n\x1b[31;22mAlas, due to thy torn meniscus, ye cannot move. Best take it easy on that leg.")
+		}
+		drawMessageBuffer()
 	}
 }
 
@@ -158,13 +167,13 @@ func (_ MudView) Update() {
 					drawHintText()
 				}
 			case "n", "north":
-				MudConnection.Write([]byte{shared.RequestTypeMovement, shared.DirectionNorth, '\n'})
+				MudConnection.Write([]byte{shared.RequestTypeMovement, byte(shared.DirectionNorth), '\n'})
 			case "e", "east":
-				MudConnection.Write([]byte{shared.RequestTypeMovement, shared.DirectionEast, '\n'})
+				MudConnection.Write([]byte{shared.RequestTypeMovement, byte(shared.DirectionEast), '\n'})
 			case "s", "south":
-				MudConnection.Write([]byte{shared.RequestTypeMovement, shared.DirectionSouth, '\n'})
+				MudConnection.Write([]byte{shared.RequestTypeMovement, byte(shared.DirectionSouth), '\n'})
 			case "w", "west":
-				MudConnection.Write([]byte{shared.RequestTypeMovement, shared.DirectionWest, '\n'})
+				MudConnection.Write([]byte{shared.RequestTypeMovement, byte(shared.DirectionWest), '\n'})
 			default:
 				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\x1b[31;22m is not a recognized command!\x1b[90;22m", command))
 				drawMessageBuffer()
