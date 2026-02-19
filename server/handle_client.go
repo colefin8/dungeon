@@ -19,10 +19,11 @@ func HandleClient(conn *net.Conn) {
 	// add user to client list
 	clientsMu.Lock()
 	client := &Client{
-		conn:       conn,
-		username:   "",
-		currentPos: world.CenterPos,
-		isLoggedIn: false,
+		conn:            conn,
+		username:        "",
+		currentPos:      world.CenterPos,
+		isLoggedIn:      false,
+		hasTornMeniscus: false,
 	}
 	clients[conn] = client
 	clientsMu.Unlock()
@@ -60,33 +61,76 @@ func HandleClient(conn *net.Conn) {
 			clientsMu.Lock()
 			client.username = strings.TrimSpace(string(data[1:]))
 			client.isLoggedIn = true
+			switch strings.ToLower(client.username) {
+			case "logan", "logo", "logomonkey", "lo":
+				client.hasTornMeniscus = true
+			}
 			clientsMu.Unlock()
 			log("%s has joined!", client.username)
-			data := []byte{shared.ResponseTypeLogin}
-			data = binary.LittleEndian.AppendUint16(data, uint16(len(client.username)))
-			data = append(data, []byte(client.username)...)
-			broadcast <- data
+			dataToSend := []byte{shared.ResponseTypeLogin}
+			dataToSend = binary.LittleEndian.AppendUint16(dataToSend, uint16(len(client.username)))
+			dataToSend = append(dataToSend, []byte(client.username)...)
+			broadcast <- dataToSend
 			updateLoggedInUsers <- true
 		case shared.RequestTypeSay:
 			txt := strings.TrimSpace(string(data[1:]))
-			data := []byte{shared.ResponseTypeSay}
-			data = binary.LittleEndian.AppendUint16(data, uint16(len(client.username)))
-			data = append(data, []byte(client.username)...)
-			data = binary.LittleEndian.AppendUint16(data, uint16(len(txt)))
-			data = append(data, []byte(txt)...)
-			broadcast <- data
+			dataToSend := []byte{shared.ResponseTypeSay}
+			dataToSend = binary.LittleEndian.AppendUint16(dataToSend, uint16(len(client.username)))
+			dataToSend = append(dataToSend, []byte(client.username)...)
+			dataToSend = binary.LittleEndian.AppendUint16(dataToSend, uint16(len(txt)))
+			dataToSend = append(dataToSend, []byte(txt)...)
+			broadcast <- dataToSend
 		case shared.RequestTypeWho:
 			writeDataToClient(conn, loggedInUsersBin)
+		case shared.RequestTypeMovement:
+			movementType := shared.Direction(data[1])
+			// free space where they want to go?
+			targetWorldPos := client.currentPos
+			switch movementType {
+			case shared.DirectionNorth:
+				targetWorldPos.Y -= 1
+			case shared.DirectionEast:
+				targetWorldPos.X += 1
+			case shared.DirectionSouth:
+				targetWorldPos.Y += 1
+			case shared.DirectionWest:
+				targetWorldPos.X -= 1
+			}
+			if client.hasTornMeniscus {
+				writeDataToClient(conn, []byte{shared.ResponseTypeCantMove, byte(shared.CantMoveReasonTM)})
+				continue
+			} else {
+				currentCell := world.Cells[client.currentPos.Hash()]
+				if currentCell.Exits&byte(movementType) != 0 {
+					if _, exists := world.Cells[targetWorldPos.Hash()]; exists {
+						client.currentPos = targetWorldPos
+					} else {
+						log("ERROR: user tried to move from cell %v to nonexistent cell %v using an exit", client.currentPos, targetWorldPos)
+						writeDataToClient(conn, []byte{shared.ResponseTypeCantMove, byte(shared.CantMoveReasonNoExit)})
+						continue
+					}
+				} else {
+					// send bonk message
+					writeDataToClient(conn, []byte{shared.ResponseTypeCantMove, byte(shared.CantMoveReasonNoExit)})
+					continue
+				}
+			}
+			fallthrough
 		case shared.RequestTypeLook:
-			data = []byte{shared.ResponseTypeLook}
-			c := world.Cells[client.currentPos.Hash()]
-			data = binary.LittleEndian.AppendUint16(data, uint16(len(c.Title)))
-			data = append(data, []byte(c.Title)...)
-			data = binary.LittleEndian.AppendUint16(data, uint16(len(c.Description)))
-			data = append(data, []byte(c.Description)...)
-			writeDataToClient(conn, data)
+			sendLookResponse(conn, client)
 		}
 	}
+}
+
+func sendLookResponse(conn *net.Conn, client *Client) {
+	dataToSend := []byte{shared.ResponseTypeLook}
+	c := world.Cells[client.currentPos.Hash()]
+	dataToSend = binary.LittleEndian.AppendUint16(dataToSend, uint16(len(c.Title)))
+	dataToSend = append(dataToSend, []byte(c.Title)...)
+	dataToSend = binary.LittleEndian.AppendUint16(dataToSend, uint16(len(c.Description)))
+	dataToSend = append(dataToSend, []byte(c.Description)...)
+	dataToSend = append(dataToSend, byte(c.Exits))
+	writeDataToClient(conn, dataToSend)
 }
 
 // Writes data to a client connection, encoded as the length of the data as a little-endian 16-bit number, followed by the data itself.

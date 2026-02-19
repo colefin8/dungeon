@@ -44,12 +44,12 @@ func (_ MudView) ProcessServerMessage(data []byte) {
 	case shared.ResponseTypeLogin:
 		lenUsername := binary.LittleEndian.Uint16(data[1:3])
 		username := string(data[3 : 3+lenUsername])
-		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has entered the dungeon!", username))
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[90;22m has entered the dungeon!", username))
 		drawMessageBuffer()
 	case shared.ResponseTypeLogout:
 		lenUsername := binary.LittleEndian.Uint16(data[1:3])
 		username := string(data[3 : 3+lenUsername])
-		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[39;22m has left the dungeon....", username))
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[97;1m%s\x1b[90;22m has left the dungeon....", username))
 		drawMessageBuffer()
 	case shared.ResponseTypeLoggedInUsers:
 		dataIdx := 1
@@ -71,11 +71,32 @@ func (_ MudView) ProcessServerMessage(data []byte) {
 		msgBuffer.Append(whoStr.String())
 		drawMessageBuffer()
 	case shared.ResponseTypeLook:
-		lenTitle := binary.LittleEndian.Uint16(data[1:])
-		title := string(data[3 : 3+lenTitle])
-		lenDescription := binary.LittleEndian.Uint16(data[3+lenTitle:])
-		description := string(data[5+lenTitle : 5+lenTitle+lenDescription])
-		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\n\x1b[90;22m%s", title, description))
+		dataIdx := 1
+		lenTitle := int(binary.LittleEndian.Uint16(data[dataIdx:]))
+		dataIdx += 2
+		title := string(data[dataIdx : dataIdx+lenTitle])
+		dataIdx += lenTitle
+		lenDescription := int(binary.LittleEndian.Uint16(data[dataIdx : dataIdx+2]))
+		dataIdx += 2
+		description := string(data[dataIdx : dataIdx+int(lenDescription)])
+		dataIdx += lenDescription
+		exitsRaw := data[dataIdx]
+		dataIdx++
+		exits := []string{}
+		if exitsRaw&byte(shared.DirectionNorth) != 0 {
+			exits = append(exits, "north")
+		}
+		if exitsRaw&byte(shared.DirectionEast) != 0 {
+			exits = append(exits, "east")
+		}
+		if exitsRaw&byte(shared.DirectionSouth) != 0 {
+			exits = append(exits, "south")
+		}
+		if exitsRaw&byte(shared.DirectionWest) != 0 {
+			exits = append(exits, "west")
+		}
+		exitsTxt := strings.Join(exits, ", ")
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\n\x1b[90;22m%s\n\nVisible exits are \x1b[37m%s\x1b[90;22m.", title, description, exitsTxt))
 		drawMessageBuffer()
 	case shared.ResponseTypeSay:
 		lenUsername := binary.LittleEndian.Uint16(data[1:3])
@@ -85,11 +106,28 @@ func (_ MudView) ProcessServerMessage(data []byte) {
 		saysWord := "says"
 		switch msg[len(msg)-1:] {
 		case "!":
-			saysWord = "shouts"
+			saysWord = "exclaims"
 		case "?":
 			saysWord = "asks"
 		}
+		switch msg[len(msg)-2:] {
+		case "!!":
+			saysWord = "shouts"
+		case "!?":
+			saysWord = "demands"
+		case ":O":
+			saysWord = "sings"
+		}
 		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[32;1m\"%s\"\x1b[90;22m, %s \x1b[37;1m%s\x1b[90;22m.", msg, saysWord, username))
+		drawMessageBuffer()
+	case shared.ResponseTypeCantMove:
+		reason := shared.CantMoveReason(data[1])
+		switch reason {
+		case shared.CantMoveReasonNoExit:
+			msgBuffer.Append("\n\n\x1b[31;22mAlas, ye cannot go that way!")
+		case shared.CantMoveReasonTM:
+			msgBuffer.Append("\n\n\x1b[31;22mAlas, due to thy torn meniscus, ye cannot move. Best take it easy on that leg.")
+		}
 		drawMessageBuffer()
 	}
 }
@@ -134,7 +172,7 @@ func (_ MudView) Update() {
 		inputBuffer.Update(e)
 		select {
 		case txt := <-inputSubmit:
-			command := strings.Split(txt, " ")[0]
+			command := strings.ToLower(strings.Split(txt, " ")[0])
 			switch command {
 			case "quit":
 				inputStreamSet.Quit <- true
@@ -146,7 +184,7 @@ func (_ MudView) Update() {
 					drawHintText()
 				}
 			case "who":
-				MudConnection.Write(append([]byte{shared.RequestTypeWho}, '\n'))
+				MudConnection.Write([]byte{shared.RequestTypeWho, '\n'})
 				if hintStep == "who" {
 					hintStep = "say"
 					drawHintText()
@@ -157,6 +195,17 @@ func (_ MudView) Update() {
 					hintStep = "done"
 					drawHintText()
 				}
+			case "n", "north":
+				MudConnection.Write([]byte{shared.RequestTypeMovement, byte(shared.DirectionNorth), '\n'})
+			case "e", "east":
+				MudConnection.Write([]byte{shared.RequestTypeMovement, byte(shared.DirectionEast), '\n'})
+			case "s", "south":
+				MudConnection.Write([]byte{shared.RequestTypeMovement, byte(shared.DirectionSouth), '\n'})
+			case "w", "west":
+				MudConnection.Write([]byte{shared.RequestTypeMovement, byte(shared.DirectionWest), '\n'})
+			default:
+				msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\x1b[31;22m is not a recognized command!\x1b[90;22m", command))
+				drawMessageBuffer()
 			}
 		default:
 		}

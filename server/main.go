@@ -13,17 +13,16 @@ import (
 	"dungeon/shared"
 )
 
-const SOCKET = "/home/dungeon/.dungeon.sock"
-const LOG_FILE = "/home/dungeon/.dungeon.log"
 const MAX_NUM_CONNECTIONS = math.MaxUint16
 
 var logFile *os.File
 
 type Client struct {
-	conn       *net.Conn
-	username   string
-	currentPos world.Pos
-	isLoggedIn bool
+	conn            *net.Conn
+	isLoggedIn      bool
+	username        string
+	currentPos      world.Pos
+	hasTornMeniscus bool
 }
 
 var broadcast = make(chan []byte)
@@ -39,7 +38,7 @@ func main() {
 	// open log file
 	var err error
 	logFile, err = os.OpenFile(
-		LOG_FILE,
+		shared.LOG_FILE,
 		os.O_WRONLY|os.O_CREATE|os.O_APPEND,
 		os.ModeAppend,
 	)
@@ -49,22 +48,22 @@ func main() {
 	defer logFile.Close()
 
 	// open socket
-	err = os.Remove(SOCKET)
+	err = os.Remove(shared.SOCKET_PATH)
 	if err != nil {
-		log("ERROR: could not remove existing socket file '%s': %v", SOCKET, err)
+		log("ERROR: could not remove existing socket file '%s': %v", shared.SOCKET_PATH, err)
 	}
-	listener, err := net.Listen("unix", SOCKET)
+	listener, err := net.Listen("unix", shared.SOCKET_PATH)
 	if err != nil {
-		log("ERROR: could not listen on unix socket '%s' %v", SOCKET, err)
+		log("ERROR: could not listen on unix socket '%s' %v", shared.SOCKET_PATH, err)
 	}
 	defer listener.Close()
-	defer os.Remove(SOCKET)
-	err = os.Chmod(SOCKET, 0777)
+	defer os.Remove(shared.SOCKET_PATH)
+	err = os.Chmod(shared.SOCKET_PATH, 0777)
 	if err != nil {
-		log("ERROR: Could not chmod socket file '%s': %v", SOCKET, err)
+		log("ERROR: Could not chmod socket file '%s': %v", shared.SOCKET_PATH, err)
 		os.Exit(1)
 	}
-	log("\n\nListening on %s", SOCKET)
+	log("\n\nListening on %s", shared.SOCKET_PATH)
 
 	world.CreateWorld()
 

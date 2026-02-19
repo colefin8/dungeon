@@ -37,6 +37,14 @@ Sent from a client to the server when requesting a description of their characte
 | 1 | `byte` | `RequestTypeLook` |
 | 1 | `byte` | `\n` |
 
+### Movement
+Sent from a client to the server to request their character move to a neighboring cell via an exit. Server resonds with a `ResponseTypeLook` if successful, or `ResponseTypeCantMove` otherwise.
+| Length | Type | Content |
+| - | - | - |
+| 1 | `byte` | `RequestTypeMovement` |
+| 1 | `Direction` | ID indicating north, east, south or west (for the time being) |
+| 1 | `byte` | `\n` |
+
 ## Server → client
 
 All data sent from server to client is prefixed with the length of the data as a little-endian 16-bit number, which is then followed by the data.
@@ -88,3 +96,11 @@ Sent from the server to any client who asks; gives description of their characte
 | `len(roomTitle)` | `string` | `roomTitle` |
 | 2 | `uint16` | `len(roomDescription)` |
 | `len(roomDescription)` | `string` | `roomDescription` |
+| 1 | `byte` | each of this cell's exit `Direction`s OR'd together |
+
+### Can't Move
+Sent from the server to a client who tried to move to a cell but can't; usually because there's no exit that way (they're hitting a wall)
+| Length | Type | Content |
+| - | - | - |
+| 1 | `byte` | `ResponseTypeCantMove` |
+| 1 | `CantMoveReason` | ID indicating the reason the player can't move |
