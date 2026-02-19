@@ -1,11 +1,11 @@
 package shared
 
-// const SOCKET_PATH = "/home/dungeon/.dungeon.sock"
-// const LOG_FILE = "/home/dungeon/.dungeon.log"
+const SOCKET_PATH = "/home/dungeon/.dungeon.sock"
+const LOG_FILE = "/home/dungeon/.dungeon.log"
 
 // DEBUG
-const SOCKET_PATH = "/home/dungeon/.dungeon.dbg.sock"
-const LOG_FILE = "/home/dungeon/.dungeon.dbg.log"
+// const SOCKET_PATH = "/home/dungeon/.dungeon.dbg.sock"
+// const LOG_FILE = "/home/dungeon/.dungeon.dbg.log"
 
 const (
 	RequestTypeLogin byte = iota

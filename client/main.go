@@ -101,7 +101,6 @@ func main() {
 
 	// prep manual input handling
 	if prevTermState, err = term.MakeRaw(int(tty.Fd())); err != nil {
-		tty.Close()
 		fmt.Println("ERROR: could not make /dev/tty raw")
 		os.Exit(1)
 	}
@@ -174,6 +173,6 @@ func render() {
 func quit(code int) {
 	ansi.ShowCursor()
 	ansi.DisableMouseInput(tty)
-	term.Restore(int(os.Stdin.Fd()), prevTermState)
+	term.Restore(int(tty.Fd()), prevTermState)
 	os.Exit(code)
 }
