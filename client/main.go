@@ -91,9 +91,19 @@ func main() {
 	ansi.SwitchToAlternateScreenBuffer()
 	defer ansi.SwitchToMainScreenBuffer()
 
+	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	if err != nil {
+		fmt.Println("ERROR: could not open /dev/tty for reading and writing")
+		os.Exit(1)
+	}
+
 	// prep manual input handling
-	prevTermState, _ = term.MakeRaw(int(os.Stdin.Fd()))
-	defer term.Restore(int(os.Stdin.Fd()), prevTermState)
+	if prevTermState, err = term.MakeRaw(int(tty.Fd())); err != nil {
+		tty.Close()
+		fmt.Println("ERROR: could not make /dev/tty raw")
+		os.Exit(1)
+	}
+	defer term.Restore(int(tty.Fd()), prevTermState)
 	ansi.EnableMouseInput()
 	defer ansi.DisableMouseInput()
 	ansi.HideCursor()

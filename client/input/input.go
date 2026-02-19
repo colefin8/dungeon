@@ -105,16 +105,16 @@ func StartPollingInput(streamSet StreamSet) {
 		}
 
 		// DEBUG
-		var out strings.Builder
-		out.WriteString(" input:")
-		for _, byte := range chunk {
-			if byte < ' ' || byte >= 0x7f {
-				// out.WriteString(fmt.Sprintf("\\x%x", byte))
-				fmt.Fprintf(&out, "\\x%x", byte)
-			} else {
-				out.WriteString(string(byte))
-			}
-		}
+		// var out strings.Builder
+		// out.WriteString(" input:")
+		// for _, byte := range chunk {
+		// 	if byte < ' ' || byte >= 0x7f {
+		// 		// out.WriteString(fmt.Sprintf("\\x%x", byte))
+		// 		fmt.Fprintf(&out, "\\x%x", byte)
+		// 	} else {
+		// 		out.WriteString(string(byte))
+		// 	}
+		// }
 		// os.Stdout.Write([]byte(out.String()))
 
 		events := getEventsFromInput(chunk)
