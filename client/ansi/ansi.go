@@ -24,11 +24,11 @@ const (
 
 const csi = "\x1b["
 
-func SwitchToAlternateScreenBuffer() {
-	fmt.Print(csi + "?1049h")
+func SwitchToAlternateScreenBuffer(tty *os.File) {
+	tty.WriteString(csi + "?1049h")
 }
-func SwitchToMainScreenBuffer() {
-	fmt.Print(csi + "?1049l")
+func SwitchToMainScreenBuffer(tty *os.File) {
+	tty.WriteString(csi + "?1049l")
 }
 
 func SetFgCol(col AnsiColor, isBright bool) {
@@ -93,11 +93,11 @@ func ClearLineWithCol(w int, col shared.Color) {
 	unix.Write(int(os.Stdout.Fd()), []byte(csi+"K"))
 }
 
-func EnableMouseInput() {
-	fmt.Print(csi + "?1000h" + csi + "?1002h" + csi + "?1006h")
+func EnableMouseInput(tty *os.File) {
+	tty.WriteString(csi + "?1000h" + csi + "?1006h")
 }
-func DisableMouseInput() {
-	fmt.Print(csi + "?1000l" + csi + "?1002l" + csi + "?1006l")
+func DisableMouseInput(tty *os.File) {
+	tty.WriteString(csi + "?1000l" + csi + "?1006l")
 }
 
 func RequestCursorPos() {

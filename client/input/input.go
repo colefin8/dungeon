@@ -1,7 +1,6 @@
 package input
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -86,10 +85,10 @@ type CursorPosEvent struct {
 	Pos shared.XY
 }
 
-func StartPollingInput(streamSet StreamSet) {
+func StartPollingInput(tty *os.File, streamSet StreamSet) {
 	for {
-		buf := make([]byte, 64)
-		n, err := os.Stdin.Read(buf)
+		buf := make([]byte, 128)
+		n, err := tty.Read(buf)
 		if err != nil {
 			streamSet.Quit <- true
 		}
