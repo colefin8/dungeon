@@ -104,6 +104,7 @@ func (_ MudView) ProcessServerMessage(data []byte) {
 		lenMsg := binary.LittleEndian.Uint16(data[3+lenUsername : 5+lenUsername])
 		msg := string(data[5+lenUsername : 5+lenUsername+lenMsg])
 		saysWord := "says"
+		quotes := '"'
 		switch msg[len(msg)-1:] {
 		case "!":
 			saysWord = "exclaims"
@@ -117,8 +118,10 @@ func (_ MudView) ProcessServerMessage(data []byte) {
 			saysWord = "demands"
 		case ":O":
 			saysWord = "sings"
+			quotes = '\U0001d160' // musical note
+			msg = msg[:len(msg)-2]
 		}
-		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[32;1m\"%s\"\x1b[90;22m, %s \x1b[37;1m%s\x1b[90;22m.", msg, saysWord, username))
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[32;1m%c%s%c\x1b[90;22m, %s \x1b[37;1m%s\x1b[90;22m.", quotes, msg, quotes, saysWord, username))
 		drawMessageBuffer()
 	case shared.ResponseTypeCantMove:
 		reason := shared.CantMoveReason(data[1])

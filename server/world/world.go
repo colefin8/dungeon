@@ -11,14 +11,15 @@ type Pos struct {
 	Y uint16
 	Z uint16
 }
+
+func (p Pos) Hash() uint64 {
+	return (uint64(p.Z) << 32) | (uint64(p.Y) << 16) | uint64(p.X)
+}
+
 type Cell struct {
 	Title       string
 	Description string
 	Exits       byte // each of this cell's exit `Direction`s OR'd together
-}
-
-func (p Pos) Hash() uint64 {
-	return (uint64(p.Z) << 32) | (uint64(p.Y) << 16) | uint64(p.X)
 }
 
 var Cells = make(map[uint64]Cell)
@@ -38,14 +39,14 @@ func CreateWorld() {
 	cursor.X++
 	Cells[cursor.Hash()] = Cell{
 		Title:       "Dark Hallway Next to the Chapel",
-		Description: "ewwww grossssss :(",
+		Description: "The hallway stretches long and low beneath the earth, carved from ancient stone that weeps with a chill and stubborn damp. Water gathers in the cracks between the blocks and falls at slow intervals, each drop striking the flagstones with a hollow note that travels farther than it ought. The air hangs thick with the scent of mildew and forgotten years, and a pale moss clings to the walls like a tattered cloak, lending a faint and ghostly gleam to the gloom. Iron sconces, bent and gnawed by rust, cradle dying torches whose flames flutter uneasily, as though they would sooner flee than keep watch. A wandering draft slips along the corridor, stirring cloaks and courage alike, and whispers of deeper chambers where darker things wait in patient silence.",
 		Exits:       byte(shared.DirectionWest),
 	}
 	cursor.X--
 	cursor.Y++
 	Cells[cursor.Hash()] = Cell{
 		Title:       "Great Wooden Archway to the Chapel",
-		Description: "great and powerful",
+		Description: "Some kind of description goes here describing a great wooden archway leading to an underground chapel incorporated into this underground dungeon.",
 		Exits:       byte(shared.DirectionNorth),
 	}
 }
