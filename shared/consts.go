@@ -27,7 +27,7 @@ const (
 type Direction byte
 
 const (
-	DirectionNorth Direction = iota
+	DirectionNorth Direction = 1 << iota
 	DirectionEast
 	DirectionSouth
 	DirectionWest

@@ -14,7 +14,7 @@ type Pos struct {
 type Cell struct {
 	Title       string
 	Description string
-	Exits       []shared.Direction
+	Exits       byte // each of this cell's exit `Direction`s OR'd together
 }
 
 func (p Pos) Hash() uint64 {
@@ -33,19 +33,19 @@ func CreateWorld() {
 	Cells[cursor.Hash()] = Cell{
 		Title:       "The Chapel",
 		Description: "You wonder as to why there is a chapel deep beneath the earth, where the stone corridors of the dungeon wind like the roots of a great oak tree, yet here exists one, hewn from the living rock. It is not so vast as the cathedrals of great cities, yet neither is it small; its vaulted ceiling rises high enough that a tall banner might hang untroubled, and its nave would seat a modest gathering without crowding. The air within is cool and still, carrying the faint scent of old incense long settled into the stone. Its wooden pews that line the two sides of the room have seen better days, but have also seen days of use recently.",
-		Exits:       []shared.Direction{shared.DirectionEast, shared.DirectionSouth},
+		Exits:       byte(shared.DirectionEast | shared.DirectionSouth),
 	}
 	cursor.X++
 	Cells[cursor.Hash()] = Cell{
 		Title:       "Dark Hallway Next to the Chapel",
 		Description: "ewwww grossssss :(",
-		Exits:       []shared.Direction{shared.DirectionWest},
+		Exits:       byte(shared.DirectionWest),
 	}
 	cursor.X--
 	cursor.Y++
 	Cells[cursor.Hash()] = Cell{
 		Title:       "Great Wooden Archway to the Chapel",
 		Description: "great and powerful",
-		Exits:       []shared.Direction{shared.DirectionNorth},
+		Exits:       byte(shared.DirectionNorth),
 	}
 }

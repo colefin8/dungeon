@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"slices"
 	"strings"
 
 	"dungeon/server/world"
@@ -102,7 +101,7 @@ func HandleClient(conn *net.Conn) {
 				continue
 			} else {
 				currentCell := world.Cells[client.currentPos.Hash()]
-				if slices.Contains(currentCell.Exits, movementType) {
+				if currentCell.Exits&byte(movementType) != 0 {
 					if _, exists := world.Cells[targetWorldPos.Hash()]; exists {
 						client.currentPos = targetWorldPos
 					} else {
@@ -130,6 +129,7 @@ func sendLookResponse(conn *net.Conn, client *Client) {
 	dataToSend = append(dataToSend, []byte(c.Title)...)
 	dataToSend = binary.LittleEndian.AppendUint16(dataToSend, uint16(len(c.Description)))
 	dataToSend = append(dataToSend, []byte(c.Description)...)
+	dataToSend = append(dataToSend, byte(c.Exits))
 	writeDataToClient(conn, dataToSend)
 }
 

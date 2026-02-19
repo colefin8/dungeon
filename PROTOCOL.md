@@ -96,6 +96,7 @@ Sent from the server to any client who asks; gives description of their characte
 | `len(roomTitle)` | `string` | `roomTitle` |
 | 2 | `uint16` | `len(roomDescription)` |
 | `len(roomDescription)` | `string` | `roomDescription` |
+| 1 | `byte` | each of this cell's exit `Direction`s OR'd together |
 
 ### Can't Move
 Sent from the server to a client who tried to move to a cell but can't; usually because there's no exit that way (they're hitting a wall)

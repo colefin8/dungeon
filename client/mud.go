@@ -71,11 +71,32 @@ func (_ MudView) ProcessServerMessage(data []byte) {
 		msgBuffer.Append(whoStr.String())
 		drawMessageBuffer()
 	case shared.ResponseTypeLook:
-		lenTitle := binary.LittleEndian.Uint16(data[1:])
-		title := string(data[3 : 3+lenTitle])
-		lenDescription := binary.LittleEndian.Uint16(data[3+lenTitle:])
-		description := string(data[5+lenTitle : 5+lenTitle+lenDescription])
-		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\n\x1b[90;22m%s", title, description))
+		dataIdx := 1
+		lenTitle := int(binary.LittleEndian.Uint16(data[dataIdx:]))
+		dataIdx += 2
+		title := string(data[dataIdx : dataIdx+lenTitle])
+		dataIdx += lenTitle
+		lenDescription := int(binary.LittleEndian.Uint16(data[dataIdx : dataIdx+2]))
+		dataIdx += 2
+		description := string(data[dataIdx : dataIdx+int(lenDescription)])
+		dataIdx += lenDescription
+		exitsRaw := data[dataIdx]
+		dataIdx++
+		exits := []string{}
+		if exitsRaw&byte(shared.DirectionNorth) != 0 {
+			exits = append(exits, "north")
+		}
+		if exitsRaw&byte(shared.DirectionEast) != 0 {
+			exits = append(exits, "east")
+		}
+		if exitsRaw&byte(shared.DirectionSouth) != 0 {
+			exits = append(exits, "south")
+		}
+		if exitsRaw&byte(shared.DirectionWest) != 0 {
+			exits = append(exits, "west")
+		}
+		exitsTxt := strings.Join(exits, ", ")
+		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[37;1m%s\n\x1b[90;22m%s\n\nVisible exits are \x1b[33m%s", title, description, exitsTxt))
 		drawMessageBuffer()
 	case shared.ResponseTypeSay:
 		lenUsername := binary.LittleEndian.Uint16(data[1:3])
@@ -85,9 +106,17 @@ func (_ MudView) ProcessServerMessage(data []byte) {
 		saysWord := "says"
 		switch msg[len(msg)-1:] {
 		case "!":
-			saysWord = "shouts"
+			saysWord = "exclaims"
 		case "?":
 			saysWord = "asks"
+		}
+		switch msg[len(msg)-2:] {
+		case "!!":
+			saysWord = "shouts"
+		case "!?":
+			saysWord = "demands"
+		case ":O":
+			saysWord = "sings"
 		}
 		msgBuffer.Append(fmt.Sprintf("\n\n\x1b[32;1m\"%s\"\x1b[90;22m, %s \x1b[37;1m%s\x1b[90;22m.", msg, saysWord, username))
 		drawMessageBuffer()
