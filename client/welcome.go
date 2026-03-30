@@ -15,10 +15,10 @@ import (
 )
 
 const PENCIL = "\u270e"
-const ARCHWAY_L_WIDTH = 64
-const ARCHWAY_S_WIDTH = 55
-const ARCHWAY_L_HEIGHT = 32
-const ARCHWAY_S_HEIGHT = 16
+const KNIGHT_WIDTH = 62
+const BONFIRE_WIDTH = 64
+const KNIGHT_HEIGHT = 38
+const BONFIRE_HEIGHT = 54
 
 var hasAllTextAppeared = false
 var inputReady = make(chan bool, 1)
@@ -109,56 +109,56 @@ func (_ WelcomeView) Render() {
 	ansi.HideCursor()
 
 	// load up welcome graphic binaries
-	archwayLFile, err := os.Open("knight.bin")
+	knightFile, err := os.Open("knight.bin")
 	if err != nil {
-		fmt.Printf("could not open archway file: %v\n", err)
+		fmt.Printf("could not open knight file: %v\n", err)
 		inputStreamSet.Quit <- true
 	}
-	stat, _ := archwayLFile.Stat()
+	stat, _ := knightFile.Stat()
 	fileSize := stat.Size()
-	archwayLBuf := make([]byte, fileSize)
-	archwayLFile.Read(archwayLBuf)
+	knightBuf := make([]byte, fileSize)
+	knightFile.Read(knightBuf)
 
-	archwaySFile, err := os.Open("bonfire.bin")
+	bonfireFile, err := os.Open("bonfire.bin")
 	if err != nil {
-		fmt.Printf("could not open small archway file: %v\n", err)
+		fmt.Printf("could not open bonfire file: %v\n", err)
 		inputStreamSet.Quit <- true
 	}
-	stat, _ = archwaySFile.Stat()
+	stat, _ = bonfireFile.Stat()
 	fileSize = stat.Size()
-	archwaySBuf := make([]byte, fileSize)
-	archwaySFile.Read(archwaySBuf)
+	bonfireBuf := make([]byte, fileSize)
+	bonfireFile.Read(bonfireBuf)
 
 	// display welcome graphic
 	const WELCOME_TEXT_AREA_WIDTH = 32
 	welcomeGraphicPos := shared.XY{X: 0, Y: 0}
 	switch Dimension {
 	case DimensionXl:
-		welcomeGraphicPos = shared.XY{X: (TermSize.X / 2) - ((WELCOME_TEXT_AREA_WIDTH + ARCHWAY_L_WIDTH) / 2), Y: (TermSize.Y / 2) - (ARCHWAY_L_HEIGHT / 2)}
+		welcomeGraphicPos = shared.XY{X: (TermSize.X / 2) - ((WELCOME_TEXT_AREA_WIDTH + KNIGHT_WIDTH) / 2), Y: (TermSize.Y / 2) - (KNIGHT_HEIGHT / 2)}
 	case DimensionTall:
-		welcomeGraphicPos = shared.XY{X: (TermSize.X / 2) - (ARCHWAY_L_WIDTH / 2), Y: 0}
+		welcomeGraphicPos = shared.XY{X: (TermSize.X / 2) - (KNIGHT_WIDTH / 2), Y: 0}
 	case DimensionM:
-		welcomeGraphicPos = shared.XY{X: (TermSize.X / 2) - (ARCHWAY_S_WIDTH / 2), Y: 0}
+		welcomeGraphicPos = shared.XY{X: (TermSize.X / 2) - (BONFIRE_WIDTH / 2), Y: 0}
 	}
 	switch Dimension {
 	case DimensionXl, DimensionTall:
 		ansi.MoveCursorTo(welcomeGraphicPos.X+1, welcomeGraphicPos.Y+1)
-		unix.Write(int(os.Stdout.Fd()), archwayLBuf)
+		unix.Write(int(os.Stdout.Fd()), knightBuf)
 	case DimensionM:
 		ansi.MoveCursorTo(welcomeGraphicPos.X+1, welcomeGraphicPos.Y+1)
-		unix.Write(int(os.Stdout.Fd()), archwaySBuf)
+		unix.Write(int(os.Stdout.Fd()), bonfireBuf)
 	}
 
 	const WELCOME_TEXT = "Welcome...."
 	welcomeTextPos := shared.XY{X: (TermSize.X / 2) - (len(WELCOME_TEXT) / 2), Y: 2}
 	switch Dimension {
 	case DimensionXl:
-		welcomeTextPos.X = welcomeGraphicPos.X + ARCHWAY_L_WIDTH + 4
+		welcomeTextPos.X = welcomeGraphicPos.X + KNIGHT_WIDTH + 4
 		welcomeTextPos.Y = TermSize.Y / 2
 	case DimensionTall:
-		welcomeTextPos.Y = welcomeGraphicPos.Y + ARCHWAY_L_HEIGHT + 1
+		welcomeTextPos.Y = welcomeGraphicPos.Y + KNIGHT_HEIGHT + 1
 	case DimensionM:
-		welcomeTextPos.Y = welcomeGraphicPos.Y + ARCHWAY_S_HEIGHT + 1
+		welcomeTextPos.Y = welcomeGraphicPos.Y + BONFIRE_HEIGHT + 1
 	}
 	ansi.MoveCursorTo(welcomeTextPos.X, welcomeTextPos.Y)
 	ansi.Set24BitFgCol(shared.Color{R: 255, G: 255, B: 255})
