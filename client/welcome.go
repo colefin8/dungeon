@@ -109,7 +109,7 @@ func (_ WelcomeView) Render() {
 	ansi.HideCursor()
 
 	// load up welcome graphic binaries
-	archwayLFile, err := os.Open("archway.bin")
+	archwayLFile, err := os.Open("knight.bin")
 	if err != nil {
 		fmt.Printf("could not open archway file: %v\n", err)
 		inputStreamSet.Quit <- true
@@ -119,7 +119,7 @@ func (_ WelcomeView) Render() {
 	archwayLBuf := make([]byte, fileSize)
 	archwayLFile.Read(archwayLBuf)
 
-	archwaySFile, err := os.Open("sword.bin")
+	archwaySFile, err := os.Open("bonfire.bin")
 	if err != nil {
 		fmt.Printf("could not open small archway file: %v\n", err)
 		inputStreamSet.Quit <- true
